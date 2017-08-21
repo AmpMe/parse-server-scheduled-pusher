@@ -1,0 +1,49 @@
+{
+  "extends": ["eslint:recommended", "google"],
+  "parserOptions": {
+     "ecmaVersion": 6
+   },
+  "env": {
+    "es6": true,
+    "node": true
+  },
+  "rules": {
+    "prefer-template": "error",
+    "linebreak-style": [
+        "error",
+        "unix"
+    ],
+    "quotes": [
+        "error",
+        "single"
+    ],
+    "semi": [
+        "error",
+        "always"
+    ],
+    "max-len": [
+        "warn",
+        120
+    ],
+    "no-undef": "error",
+    "object-curly-spacing": [
+        "error",
+        "always"
+    ],
+    "array-bracket-spacing": [
+        "error",
+        "always"
+    ],
+    "prefer-const": "error",
+    "require-jsdoc": [
+      "error",
+      {
+        require: {
+          FunctionDeclaration: false,
+          MethodDefinition: false,
+          ClassDeclaration: true
+        }
+      }
+    ],
+  }
+}

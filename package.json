@@ -1,0 +1,31 @@
+{
+  "name": "parse-server-scheduled-pusher",
+  "version": "1.0.0",
+  "author": "Marvel Mathew <marvel@ampme.com>"
+  "main": "bin/index.js",
+  "scripts": {
+    "start": "TZ=UTC node bin/index.js",
+    "lint": "eslint .",
+    "test": "TZ=UTC TESTING=1 nyc jasmine"
+  },
+  "engines": {
+    "node": ">=6"
+  },
+  "dependencies": {
+    "bluebird": "^3.5.0",
+    "express": "^4.15.3",
+    "moment": "^2.18.1",
+    "parse": "^1.10.0",
+    "parse-server": "^2.5.3",
+    "parse-server-push-adapter": "^2.0.0",
+    "parse-server-test-runner": "git://github.com/AmpMe/parse-server-test-runner.git",
+    "time": "^0.12.0"
+  },
+  "devDependencies": {
+    "eslint": "^4.5.0",
+    "eslint-config-google": "^0.9.1",
+    "jasmine": "^2.6.0",
+    "moment-timezone": "^0.5.13",
+    "nyc": "^11.0.3"
+  }
+}
