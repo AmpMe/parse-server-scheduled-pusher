@@ -1,7 +1,7 @@
 {
   "name": "parse-server-scheduled-pusher",
   "version": "1.0.0",
-  "author": "Marvel Mathew <marvel@ampme.com>"
+  "author": "Marvel Mathew <marvel@ampme.com>",
   "main": "bin/index.js",
   "scripts": {
     "start": "TZ=UTC node bin/index.js",
