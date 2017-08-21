@@ -14,13 +14,13 @@ const {
 const { getScheduledPushes } = require('../src/query');
 
 describe('getUnsentOffsets', () => {
-  const sentPerOffset = {
+  const sentPerUTCOffset = {
     0: 123,
     60: 99,
     120: 0, // queued but PushStatus not updated
   };
 
-  const unsentOffsets = getUnsentOffsets(sentPerOffset);
+  const unsentOffsets = getUnsentOffsets(sentPerUTCOffset);
   it('should not contain already sent offsets', () => {
     for (const sentOffset of Object.keys(unsentOffsets)) {
       expect(unsentOffsets).not.toContain(sentOffset);
@@ -29,8 +29,8 @@ describe('getUnsentOffsets', () => {
 });
 
 describe('getCurrentOffsets', () => {
-  const sentPerOffset = {};
-  const allOffsets = getUnsentOffsets(sentPerOffset); // All the offsets
+  const sentPerUTCOffset = {};
+  const allOffsets = getUnsentOffsets(sentPerUTCOffset); // All the offsets
 
   describe('30 minute offsets', () => {
     it('should only include Pakistan', () => {

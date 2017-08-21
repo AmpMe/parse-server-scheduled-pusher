@@ -7,9 +7,9 @@ const { find } = require('parse-server/lib/rest');
 const { offsetToTimezones } = require('./offsets');
 const { batchQuery } = require('./query');
 
-function getUnsentOffsets(sentPerOffset) {
+function getUnsentOffsets(sentPerUTCOffset) {
   return Object.keys(offsetToTimezones)
-    .filter((offset) => sentPerOffset[offset] === undefined);
+    .filter((offset) => sentPerUTCOffset[offset] === undefined);
 }
 
 const SEND_TIME_VARIANCE = 60 * 5; // 5 minutes, 300 seconds
@@ -41,9 +41,9 @@ function createPushWorkItems(pushStatus, now) {
   now = now || new Date();
 
   const pushTime = new Date(pushStatus.get('pushTime'));
-  const sentPerOffset = pushStatus.get('sentPerOffset') || {};
+  const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset') || {};
 
-  const unsentOffsets = getUnsentOffsets(sentPerOffset);
+  const unsentOffsets = getUnsentOffsets(sentPerUTCOffset);
   const offsetsToSend = getCurrentOffsets(unsentOffsets, pushTime, now);
 
   return offsetsToSend.map((offset) => {

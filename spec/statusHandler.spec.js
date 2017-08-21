@@ -36,15 +36,15 @@ describe('statusHandler', () => {
       sendNotification()
         .then(getScheduledPushes)
         .then(([ pushStatus ]) => {
-          expect(pushStatus.get('sentPerOffset')).toBeUndefined();
-          expect(pushStatus.get('failedPerOffset')).toBeUndefined();
+          expect(pushStatus.get('sentPerUTCOffset')).toBeUndefined();
+          expect(pushStatus.get('failedPerUTCOffset')).toBeUndefined();
 
           return addOffsetCounts(pushStatus.id, 180, config.database);
         })
         .then(getScheduledPushes)
         .then(([ pushStatus ]) => {
-          expect(pushStatus.get('sentPerOffset')['180']).toBe(0);
-          expect(pushStatus.get('failedPerOffset')['180']).toBe(0);
+          expect(pushStatus.get('sentPerUTCOffset')['180']).toBe(0);
+          expect(pushStatus.get('failedPerUTCOffset')['180']).toBe(0);
         })
         .then(done)
         .catch(done.fail);
@@ -62,8 +62,8 @@ describe('statusHandler', () => {
         })
         .then(getScheduledPushes)
         .then(([ pushStatus ]) => {
-          expect(pushStatus.get('sentPerOffset')['180']).toBe(2);
-          expect(pushStatus.get('failedPerOffset')['180']).toBe(1);
+          expect(pushStatus.get('sentPerUTCOffset')['180']).toBe(2);
+          expect(pushStatus.get('failedPerUTCOffset')['180']).toBe(1);
         })
         .catch(done.fail)
         .then(done);

@@ -2,8 +2,8 @@ module.exports = {
   addOffsetCounts(pushStatusId, offset, database, now) {
     now = now || new Date();
     const update = { updatedAt: now };
-    update[`sentPerOffset.${offset}`] = { __op: 'Increment', amount: 0 };
-    update[`failedPerOffset.${offset}`] = { __op: 'Increment', amount: 0 };
+    update[`sentPerUTCOffset.${offset}`] = { __op: 'Increment', amount: 0 };
+    update[`failedPerUTCOffset.${offset}`] = { __op: 'Increment', amount: 0 };
 
     return database.update('_PushStatus', { objectId: pushStatusId }, update);
   },
@@ -21,8 +21,8 @@ module.exports = {
     }
 
     const update = { updatedAt: now };
-    update[`sentPerOffset.${offset}`] = { __op: 'Increment', amount: numSent };
-    update[`failedPerOffset.${offset}`] = { __op: 'Increment', amount: numFailed };
+    update[`sentPerUTCOffset.${offset}`] = { __op: 'Increment', amount: numSent };
+    update[`failedPerUTCOffset.${offset}`] = { __op: 'Increment', amount: numFailed };
 
     return database.update('_PushStatus', { objectId: pushStatusId }, update);
   },
@@ -32,10 +32,10 @@ module.exports = {
 
     const ttl = now - 24 * 60 * 60 * 1000;
     if (+pushStatus.get('pushTime') < ttl) {
-      const sentPerOffset = pushStatus.get('sentPerOffset') || {};
+      const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset') || {};
       let sentSum = 0;
-      for (const offset of Object.keys(sentPerOffset)) {
-        sentSum += sentPerOffset[offset];
+      for (const offset of Object.keys(sentPerUTCOffset)) {
+        sentSum += sentPerUTCOffset[offset];
       }
       const status = sentSum === 0 ? 'failed' : 'succeeded';
 
