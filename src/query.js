@@ -19,7 +19,16 @@ function getScheduledPushes() {
     .find({ useMasterKey: true });
 }
 
+const PushCampaign = Parse.Object.extend('PushCampaign');
+function getActiveCampaigns() {
+  const campaignsQ = new Parse.Query(PushCampaign);
+  campaignsQ.equalTo('status', 'active');
+  return campaignsQ.find({ useMasterKey: true });
+}
+
 module.exports = {
+  PushCampaign,
   batchQuery,
+  getActiveCampaigns,
   getScheduledPushes,
 };

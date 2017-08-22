@@ -38,12 +38,14 @@
     "require-jsdoc": [
       "error",
       {
-        require: {
-          FunctionDeclaration: false,
-          MethodDefinition: false,
-          ClassDeclaration: true
+        "require": {
+          "FunctionDeclaration": false,
+          "MethodDefinition": false,
+          "ClassDeclaration": true
         }
       }
     ],
+    "no-inner-declarations": "warn",
+    "no-case-declarations": "off"
   }
 }

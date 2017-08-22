@@ -1,8 +1,9 @@
 const Promise = require('bluebird');
 
-const { getScheduledPushes } = require('./query');
+const { getScheduledPushes, getActiveCampaigns } = require('./query');
 const { createPushWorkItems, batchPushWorkItem } = require('./schedule');
 const { addOffsetCounts, trackSent, markAsComplete } = require('./statusHandler');
+const { createScheduledPush } = require('./campaign');
 
 const flatten = (arr) => arr.reduce((a, b) => a.concat(b), []);
 
@@ -32,5 +33,10 @@ module.exports = {
           ))
           .then((pushResults) => trackSent(pushStatus.id, offset, pushResults, parseConfig.database))
       ), { concurrency: PUSH_SEND_CONCURRENCY });
+  },
+
+  runPushCampaigns(parseConfig) {
+    return Promise.resolve(getActiveCampaigns())
+      .each((campaign) => createScheduledPush(campaign, parseConfig.database));
   },
 };

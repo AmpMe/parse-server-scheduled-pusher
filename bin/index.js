@@ -7,7 +7,7 @@ const { ParseServer } = require('parse-server');
 const AppCache = require('parse-server/lib/cache').default;
 const Config = require('parse-server/lib/Config');
 
-const { sendScheduledPushes } = require('../src');
+const { sendScheduledPushes, runPushCampaigns } = require('../src');
 
 let config;
 if (process.env.NODE_ENV === 'production') {
@@ -43,3 +43,6 @@ setInterval(() => {
   sendScheduledPushes(parseConfig, pushAdapter);
 }, process.env.SCHEDULE_CHECK_INTERVAL || 30 * 1000);
 
+setInterval(() => {
+  runPushCampaigns(parseConfig);
+}, process.env.SCHEDULE_CHECK_INTERVAL + 5000 || 35 * 1000);

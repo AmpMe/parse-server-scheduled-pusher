@@ -1,7 +1,8 @@
 const { dropDB } = require('parse-server-test-runner');
 const Parse = require('parse/node');
 
-const { batchQuery, getScheduledPushes } = require('../src/query');
+const { batchQuery, getActiveCampaigns, getScheduledPushes } = require('../src/query');
+const { createCampaign } = require('./util');
 
 describe('getScheduledPushes', () => {
   beforeEach((done) => {
@@ -52,5 +53,14 @@ describe('batchQuery', () => {
 
     const queryResultLength = batches.reduce((sum, item) => item.limit + sum, 0);
     expect(queryResultLength).toEqual(3 * batches.length);
+  });
+});
+
+describe('getActiveCampaigns', () => {
+  it('should work', (done) => {
+    createCampaign()
+      .then(getActiveCampaigns)
+      .then(([ pushCampaign ]) => expect(pushCampaign).toBeDefined())
+      .then(done, done.fail);
   });
 });
