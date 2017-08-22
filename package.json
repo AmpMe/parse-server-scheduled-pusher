@@ -2,10 +2,14 @@
   "name": "parse-server-scheduled-pusher",
   "version": "1.0.0",
   "author": "Marvel Mathew <marvel@ampme.com>",
-  "main": "bin/index.js",
+  "main": "src",
+  "bin": {
+    "parse-server-scheduled-pusher": "bin/parse-server-scheduled-pusher"
+  },
   "scripts": {
     "start": "TZ=UTC node bin/index.js",
     "lint": "eslint .",
+    "pretest": "eslint .",
     "test": "TZ=UTC TESTING=1 nyc jasmine"
   },
   "engines": {
