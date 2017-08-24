@@ -5,8 +5,9 @@ const Config = require('parse-server/lib/Config');
 const { master } = require('parse-server/lib/Auth');
 const { create } = require('parse-server/lib/rest');
 const { dropDB } = require('parse-server-test-runner');
+const { EventEmitterMQ } = require('parse-server/lib/Adapters/MessageQueue/EventEmitterMQ');
 
-const { sendScheduledPushes, runPushCampaigns } = require('../src');
+const { sendScheduledPushes, processPushBatch, runPushCampaigns } = require('../src');
 const { PushCampaign } = require('../src/query');
 
 const installations = require('./fixtures/installations.json');
@@ -20,7 +21,7 @@ Object.keys(installations).forEach((key) => {
 const { state: mockPushState, adapter: pushAdapter } = require('./mockPushAdapter');
 
 // Integration tests
-describe('sendScheduledPushes', () => {
+describe('Sending scheduled pushes', () => {
   beforeAll((done) => {
     const config = new Config('test', '/1');
     dropDB()
@@ -36,7 +37,23 @@ describe('sendScheduledPushes', () => {
   it('should work', (done) => {
     const parseConfig = new Config('test', '/1');
 
+    const now = new Date('2017-08-24T17:27:43.105Z');
+    const pushTime = new Date(new Date('2017-08-24T14:27:43.105Z') - 5);
+
+    const publisher = EventEmitterMQ.createPublisher();
+    const subscriber = EventEmitterMQ.createSubscriber();
+
+    const pwiReceivePromise = new Promise((resolve) => {
+      subscriber.subscribe('pushWorkItem');
+      subscriber.on('message', (channel, rawMsg) => {
+        const pwi = JSON.parse(rawMsg);
+        processPushBatch(pwi, parseConfig, pushAdapter, now);
+        resolve();
+      });
+    });
+
     Parse.Push.send({
+      push_time: pushTime,
       data: {
         alert: 'Alert!!!!!',
         uri: 'foo://bar?baz=qux',
@@ -45,10 +62,12 @@ describe('sendScheduledPushes', () => {
       },
       where: {},
     }, { useMasterKey: true })
-      .then(() => sendScheduledPushes(parseConfig, pushAdapter))
-      .then(() => Promise.delay(() => {
+      .then(() => sendScheduledPushes(parseConfig, publisher, now))
+      .then(() => pwiReceivePromise)
+      .then(() => Promise.delay(100))
+      .then(() => {
         expect(mockPushState.sent).toBe(installations.length);
-      }, 20))
+      })
       .then(done, done.fail);
   });
 });

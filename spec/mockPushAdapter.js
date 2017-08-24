@@ -5,8 +5,10 @@ const state = {
 module.exports = {
   adapter: {
     send(body, installations, pushStatus) {
-      state.sent += 1;
-      return Promise.resolve();
+      state.sent += installations.length;
+      return Promise.resolve(installations.map(() => {
+        return { transmitted: true };
+      }));
     },
     getValidPushTypes() {
       return [ 'ios', 'android', 'gcm', 'fcm' ];
