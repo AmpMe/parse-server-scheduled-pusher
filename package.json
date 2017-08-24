@@ -7,7 +7,7 @@
     "parse-server-scheduled-pusher": "bin/parse-server-scheduled-pusher"
   },
   "scripts": {
-    "start": "TZ=UTC node bin/index.js",
+    "start": "TZ=UTC node bin/parse-server-scheduled-pusher",
     "lint": "eslint .",
     "pretest": "eslint .",
     "test": "TZ=UTC TESTING=1 nyc jasmine"

@@ -6,8 +6,9 @@ const Parse = require('parse/node');
 const { ParseServer } = require('parse-server');
 const AppCache = require('parse-server/lib/cache').default;
 const Config = require('parse-server/lib/Config');
+const { ParseMessageQueue } = require('parse-server/lib/ParseMessageQueue');
 
-const { sendScheduledPushes, runPushCampaigns } = require('../src');
+const { sendScheduledPushes, runPushCampaigns, processPushBatch } = require('../src');
 
 let config;
 if (process.env.NODE_ENV === 'production') {
@@ -39,10 +40,23 @@ Parse.serverURL = `http://localhost:${parsePort}/1`;
 const parseConfig = new Config(parseServerOptions.appId, '/1');
 const pushAdapter = AppCache.get(parseServerOptions.appId).pushWorker.adapter;
 
-setInterval(() => {
-  sendScheduledPushes(parseConfig, pushAdapter);
-}, process.env.SCHEDULE_CHECK_INTERVAL || 30 * 1000);
+const publisher = ParseMessageQueue.createPublisher(parseConfig);
+const subscriber = ParseMessageQueue.createSubscriber(parseConfig);
 
-setInterval(() => {
-  runPushCampaigns(parseConfig);
-}, process.env.SCHEDULE_CHECK_INTERVAL + 5000 || 35 * 1000);
+if (process.env.PUSH_CHECKER) {
+  setInterval(() => {
+    sendScheduledPushes(parseConfig, publisher);
+  }, process.env.SCHEDULE_CHECK_INTERVAL || 30 * 1000);
+
+  setInterval(() => {
+    runPushCampaigns(parseConfig);
+  }, process.env.SCHEDULE_CHECK_INTERVAL + 5000 || 35 * 1000);
+}
+
+if (process.env.PUSH_WORKER) {
+  subscriber.subscribe('pushWorkItem');
+  subscriber.on('message', (channel, rawMsg) => {
+    const pwi = JSON.parse(rawMsg);
+    processPushBatch(pwi, parseConfig, pushAdapter);
+  });
+}

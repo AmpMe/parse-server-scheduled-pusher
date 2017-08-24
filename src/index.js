@@ -7,10 +7,8 @@ const { createScheduledPush } = require('./campaign');
 
 const flatten = (arr) => arr.reduce((a, b) => a.concat(b), []);
 
-const PUSH_SEND_CONCURRENCY = process.env.PUSH_SEND_CONCURRENCY || 1;
-
 module.exports = {
-  sendScheduledPushes(parseConfig, pushAdapter) {
+  sendScheduledPushes(parseConfig, publisher) {
     return Promise.resolve(getScheduledPushes())
       // Pick only the incomplete pushes
       .filter((push) => markAsComplete(push, parseConfig.database).then((res) => !res))
@@ -24,15 +22,16 @@ module.exports = {
 
       .map((pwi) => batchPushWorkItem(pwi, parseConfig, 100))
       .then(flatten)
+      .each((pwi) => publisher.publish('pushWorkItem', JSON.stringify(pwi)));
+  },
 
-      .map(({ offset, query, body, pushStatus }) => (
-        parseConfig.database.find('_Installation', query.where, query)
-          .then((installations) => pushAdapter.send(
-            { data: JSON.parse(body), where: query.where },
-            installations
-          ))
-          .then((pushResults) => trackSent(pushStatus.id, offset, pushResults, parseConfig.database))
-      ), { concurrency: PUSH_SEND_CONCURRENCY });
+  processPushBatch({ offset, query, body, pushStatus }, parseConfig, pushAdapter) {
+    return parseConfig.database.find('_Installation', query.where, query)
+      .then((installations) => pushAdapter.send(
+        { data: JSON.parse(body), where: query.where },
+        installations
+      ))
+      .then((pushResults) => trackSent(pushStatus.id, offset, pushResults, parseConfig.database));
   },
 
   runPushCampaigns(parseConfig) {
