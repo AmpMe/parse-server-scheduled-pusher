@@ -162,10 +162,10 @@ describe('createScheduledPush', () => {
       pushTime: '2017-08-10T23:00:00.000Z',
       query: '"{\\"user\\":{\\"__type\\":\\"Pointer\\",\\"className\\":\\"_User\\",\\"objectId\\":\\"0K1kfQnyj6\\"}}"',
       // eslint-disable-next-line max-len
-      payload: '{"alert":"ALERT!!!","uri":"foo://bar?baz=quz","url":"foo://bar?baz=qux"," notification_id":"AbaINdDnqs","type":"foo"}',
+      payload: '{"alert":"ALERT!!","uri":"foo://bar?baz=qux","url":"foo://bar?baz=qux","notification_id":"AbaINdDnqs","type":"foo"}',
       source: 'parse-scheduled-pusher',
       status: 'scheduled',
-      pushHash: '7f6d833b879163d9558545f722719edc',
+      pushHash: '6d0001cb0d8a13f0f3dffd30700dded5',
       createdAt: '2017-08-10T19:18:07.309Z',
       updatedAt: '1970-01-01T00:00:00.000Z',
       ACL: {},
