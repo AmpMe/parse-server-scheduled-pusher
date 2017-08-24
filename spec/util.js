@@ -13,10 +13,11 @@ function createCampaign(config = new Config('test', '/1'), now = new Date('2017-
     .set('sendTime', '23:00:00')
     .set('query', '{"user":{"__type":"Pointer","className":"_User","objectId":"0K1kfQnyj6"}}')
     .set('data', {
-      alert: 'Someone you follow started a party!',
-      uri: 'ampme://party?code=1499866378692&notification_id=AbaINdDnqs',
-      url: 'ampme://party?code=1499866378692&notification_id=AbaINdDnqs',
-      notification_id: 'AbaINdDnqs', type: 'partyStarted',
+      alert: 'ALERT!!',
+      uri: 'foo://bar?baz=qux',
+      url: 'foo://bar?baz=qux',
+      notification_id: 'AbaINdDnqs',
+      type: 'foo',
     });
 
   return pushCampaign.save(null, { useMasterKey: true })

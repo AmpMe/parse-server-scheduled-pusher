@@ -162,7 +162,7 @@ describe('createScheduledPush', () => {
       pushTime: '2017-08-10T23:00:00.000Z',
       query: '"{\\"user\\":{\\"__type\\":\\"Pointer\\",\\"className\\":\\"_User\\",\\"objectId\\":\\"0K1kfQnyj6\\"}}"',
       // eslint-disable-next-line max-len
-      payload: '{"alert":"Someone you follow started a party!","uri":"ampme://party?code=1499866378692&notification_id=AbaINdDnqs","url":"ampme://party?code=1499866378692&notification_id=AbaINdDnqs","notification_id":"AbaINdDnqs","type":"partyStarted"}',
+      payload: '{"alert":"ALERT!!!","uri":"foo://bar?baz=quz","url":"foo://bar?baz=qux"," notification_id":"AbaINdDnqs","type":"foo"}',
       source: 'parse-scheduled-pusher',
       status: 'scheduled',
       pushHash: '7f6d833b879163d9558545f722719edc',

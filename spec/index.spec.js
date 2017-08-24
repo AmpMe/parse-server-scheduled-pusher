@@ -74,8 +74,8 @@ describe('runPushCampaigns', () => {
     campaign.set('query', {});
     campaign.set('data', {
       alert: 'Test push',
-      uri: 'ampme://me/followers?notification_id=1',
-      url: 'ampme://me/followers?notification_id=1',
+      uri: 'foo://bar/baz?qux=1',
+      url: 'foo://bar/baz?qux=1',
     });
 
     const now = moment();
