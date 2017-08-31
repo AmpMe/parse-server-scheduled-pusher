@@ -60,7 +60,7 @@ describe('experiment', () => {
   });
 
   describe('computeBucketValue', () => {
-    it('should be spread evenly', () => {
+    it('should be spread uniformly', () => {
       function computeValues() {
         const ids = [];
         for (let i = 0; i < 10000; i++) {
@@ -69,12 +69,13 @@ describe('experiment', () => {
         return ids.map(computeBucketValue);
       }
 
-      const timesUniform = (new Array(10)).fill(0).map(computeValues)
+      const numTries = 50;
+      const timesUniform = (new Array(numTries)).fill(0).map(computeValues)
         .filter(isUniform)
         .length;
 
-      expect(timesUniform).toBeGreaterThanOrEqual(7);
-      expect(timesUniform).toBeLessThanOrEqual(10);
+      expect(timesUniform).toBeGreaterThanOrEqual(40);
+      expect(timesUniform).toBeLessThanOrEqual(numTries);
     });
   });
 });
