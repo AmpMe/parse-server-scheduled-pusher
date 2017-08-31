@@ -4,6 +4,7 @@ const { getScheduledPushes, getActiveCampaigns } = require('./query');
 const { createPushWorkItems, batchPushWorkItem } = require('./schedule');
 const { addOffsetCounts, trackSent, markAsComplete } = require('./statusHandler');
 const { createScheduledPush } = require('./campaign');
+const { computeBucketValue } = require('./experiment');
 
 const flatten = (arr) => arr.reduce((a, b) => (
   Array.isArray(b) ? a.concat(flatten(b))
@@ -30,11 +31,21 @@ module.exports = {
   },
 
   processPushBatch({ offset, query, body, pushStatus }, parseConfig, pushAdapter, now) {
-    return parseConfig.database.find('_Installation', query.where, query)
-      .then((installations) => pushAdapter.send(
-        { data: JSON.parse(body), where: query.where },
-        installations
-      ))
+    return Promise.resolve(parseConfig.database.find('_Installation', query.where, query))
+      .filter((installation) => {
+        const distribution = pushStatus.get('distribution');
+        if (distribution) {
+          const { min, max, salt } = distribution;
+          const bucketValue = computeBucketValue(installation.id, salt);
+          return min <= bucketValue && max >= bucketValue;
+        }
+
+        return true;
+      })
+      .map((installation) => pushAdapter.send({
+        data: JSON.parse(body),
+        where: { objectId: installation.id },
+      }))
       .then((pushResults) => trackSent(pushStatus.objectId, offset, pushResults, parseConfig.database, now));
   },
 

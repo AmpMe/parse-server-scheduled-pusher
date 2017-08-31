@@ -32,4 +32,16 @@ module.exports = {
     const value = hash.substring(0, nibbles);
     return parseInt(value, 16);
   },
+
+  getDistributionRange(variants, index) {
+    let min = 0;
+    let max = 0;
+    for (let i = 0; i <= index; i++) {
+      const { percent } = variants[i];
+      min = max;
+      max += Math.round((percent * DISTRIBUTION_MAX) / 100);
+    }
+
+    return { min, max };
+  },
 };

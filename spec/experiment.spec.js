@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { DISTRIBUTION_MAX, computeBucketValue } = require('../src/experiment');
+const { DISTRIBUTION_MAX, computeBucketValue, getDistributionRange } = require('../src/experiment');
 
 // From https://github.com/parse-community/parse-server/blob/51d2dd92cb8c3484d3643ee8d0a864a72554dac5/src/cryptoUtils.js
 // Returns a new random alphanumeric string of the given size.
@@ -76,6 +76,23 @@ describe('experiment', () => {
 
       expect(timesUniform).toBeGreaterThanOrEqual(40);
       expect(timesUniform).toBeLessThanOrEqual(numTries);
+    });
+  });
+
+  describe('getDistributionRange', () => {
+    fit('should work for a single variant', () => {
+      const variants = [ { percent: 100 } ];
+      const { min, max } = getDistributionRange(variants, 0);
+
+      expect(min).toBe(0);
+      expect(max).toBe(DISTRIBUTION_MAX);
+    });
+
+    fit('should work for 2 variants', () => {
+      const variants = [ { percent: 51 }, { percent: 49 } ];
+      const { min, max } = getDistributionRange(variants, 1);
+      expect(min).toBe(136902083);
+      expect(max).toBe(DISTRIBUTION_MAX);
     });
   });
 });

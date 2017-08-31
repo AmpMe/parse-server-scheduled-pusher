@@ -5,6 +5,8 @@ const { md5Hash } = require('parse-server/lib/cryptoUtils');
 
 const { PushCampaign } = require('./query');
 
+const { getDistributionRange } = require('../src/experiment');
+
 function getNextPushTime({ interval, sendTime, dayOfWeek, dayOfMonth }, now) {
   const parsedSendTime = new Date(moment(sendTime, 'hh:mm:ss').toDate());
   const pushTime = new Date(now);
@@ -77,37 +79,44 @@ function createScheduledPush(pushCampaign, database, now) {
         }
       }
 
-      const objectId = newObjectId();
-      const data = pushCampaign.get('data');
-      const payload = JSON.stringify(data);
-      let pushHash;
-      if (typeof data.alert === 'string') {
-        pushHash = md5Hash(data.alert);
-      } else if (typeof data.alert === 'object') {
-        pushHash = md5Hash(JSON.stringify(data.alert));
-      } else {
-        pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
-      }
+      const pushStatuses = pushCampaign.get('variants')
+        .map((variant) => {
+          const { data } = variant;
+          const objectId = newObjectId();
+          const payload = JSON.stringify(data);
+          let pushHash;
+          if (typeof data.alert === 'string') {
+            pushHash = md5Hash(data.alert);
+          } else if (typeof data.alert === 'object') {
+            pushHash = md5Hash(JSON.stringify(data.alert));
+          } else {
+            pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
+          }
 
-      const pushStatusObj = {
-        objectId,
-        createdAt: now,
-        pushTime: nextPushTime.toISOString(),
-        query: JSON.stringify(pushCampaign.get('query')),
-        payload,
-        source: 'parse-scheduled-pusher',
-        status: 'scheduled',
-        pushHash,
-        // lockdown!
-        ACL: {},
-      };
+          const distribution = getDistributionRange(variant);
+          return {
+            objectId,
+            createdAt: now,
+            pushTime: nextPushTime.toISOString(),
+            query: JSON.stringify(pushCampaign.get('query')),
+            payload,
+            source: 'parse-scheduled-pusher',
+            status: 'scheduled',
+            pushHash,
+            distribution: Object.assign(distribution, { salt: pushCampaign.id }),
 
-      return database.create('_PushStatus', pushStatusObj, {})
-        .then(() => {
-          const pushStatus = Parse.Object.fromJSON(Object.assign({ className: '_PushStatus' }, pushStatusObj));
-          pushCampaign.add('pushes', pushStatus);
-          return pushCampaign.save(null, { useMasterKey: true });
+            // lockdown!
+            ACL: {},
+          };
         });
+
+      return Promise.all(pushStatuses.map((p) => {
+          const pushStatus = Parse.Object.fromJSON(Object.assign({ className: '_PushStatus' }, p));
+          pushCampaign.add('pushes', pushStatus);
+          return database.create('_PushStatus', p, {});
+        }))
+        // Save the added 'pushes'
+        .then(() => pushCampaign.save(null, { useMasterKey: true }));
     });
 }
 
