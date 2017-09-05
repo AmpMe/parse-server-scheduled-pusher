@@ -1,8 +1,10 @@
 const Parse = require('parse/node');
-
-const { PushCampaign } = require('../src/query');
+const { master } = require('parse-server/lib/Auth');
+const { create } = require('parse-server/lib/rest');
+const { dropDB } = require('parse-server-test-runner');
 const Config = require('parse-server/lib/Config');
 
+const { PushCampaign } = require('../src/query');
 const { createScheduledPush } = require('../src/campaign');
 
 function createCampaign(
@@ -37,8 +39,22 @@ function getCampaignWithPushes(pushCampaign) {
     .get(pushCampaign.id, { useMasterKey: true });
 }
 
+const installations = require('./fixtures/installations.json');
+function setupInstallations(done) {
+  const config = new Config('test', '/1');
+  return dropDB()
+    .then(() => Promise.all(installations.map((i) => create(config, master(config), '_Installation', {
+      deviceToken: i.deviceToken,
+      deviceType: i.deviceType,
+      timeZone: i.timeZone,
+    }))))
+
+    .then(done, done.fail);
+}
 
 module.exports = {
   createCampaign,
   getCampaignWithPushes,
+  setupInstallations,
+  installations,
 };

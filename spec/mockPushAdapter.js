@@ -5,7 +5,6 @@ const state = {
 module.exports = {
   adapter: {
     send(body, installations, pushStatus) {
-      console.log(arguments);
       state.sent += installations.length;
       return Promise.resolve(installations.map(() => {
         return { transmitted: true };
