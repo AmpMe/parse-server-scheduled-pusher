@@ -64,7 +64,7 @@ describe('runPushCampaigns', () => {
     campaign.set('query', {});
     campaign.set('variants', [
       {
-        percent: 50,
+        percent: 51,
         data: {
           alert: 'Test push A',
           uri: 'foo://bar/baz?qux=1',
@@ -72,7 +72,7 @@ describe('runPushCampaigns', () => {
         },
       },
       {
-        percent: 50,
+        percent: 49,
         data: {
           alert: 'Test push B',
           uri: 'foo://bar/baz?qux=1',

@@ -82,7 +82,7 @@ function createScheduledPush(pushCampaign, database, now) {
       // NOTE: Creating a _PushStatus for N variants means that the Installations
       // have to be fetched N times.
       const pushStatuses = pushCampaign.get('variants')
-        .map((variant) => {
+        .map((variant, i) => {
           const { data } = variant;
           const objectId = newObjectId();
           const payload = JSON.stringify(data);
@@ -95,7 +95,7 @@ function createScheduledPush(pushCampaign, database, now) {
             pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
           }
 
-          const distribution = getDistributionRange(variant);
+          const distribution = getDistributionRange(variant, i);
           return {
             objectId,
             createdAt: now,
