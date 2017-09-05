@@ -43,12 +43,12 @@ describe('Sending scheduled pushes', () => {
     const publisher = EventEmitterMQ.createPublisher();
     const subscriber = EventEmitterMQ.createSubscriber();
 
-    const pwiReceivePromise = new Promise((resolve) => {
+    const pwiReceivePromise = new Promise((resolve, reject) => {
       subscriber.subscribe('pushWorkItem');
       subscriber.on('message', (channel, rawMsg) => {
         const pwi = JSON.parse(rawMsg);
-        processPushBatch(pwi, parseConfig, pushAdapter, now);
-        resolve();
+        processPushBatch(pwi, parseConfig, pushAdapter, now)
+          .then(resolve, reject);
       });
     });
 
@@ -64,7 +64,6 @@ describe('Sending scheduled pushes', () => {
     }, { useMasterKey: true })
       .then(() => sendScheduledPushes(parseConfig, publisher, now))
       .then(() => pwiReceivePromise)
-      .then(() => Promise.delay(100))
       .then(() => {
         expect(mockPushState.sent).toBe(installations.length);
       })
