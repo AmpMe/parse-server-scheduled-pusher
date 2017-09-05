@@ -79,6 +79,8 @@ function createScheduledPush(pushCampaign, database, now) {
         }
       }
 
+      // NOTE: Creating a _PushStatus for N variants means that the Installations
+      // have to be fetched N times.
       const pushStatuses = pushCampaign.get('variants')
         .map((variant) => {
           const { data } = variant;
