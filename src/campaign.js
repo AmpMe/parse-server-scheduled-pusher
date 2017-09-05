@@ -111,10 +111,10 @@ function createScheduledPush(pushCampaign, database, now) {
         });
 
       return Promise.all(pushStatuses.map((p) => {
-          const pushStatus = Parse.Object.fromJSON(Object.assign({ className: '_PushStatus' }, p));
-          pushCampaign.add('pushes', pushStatus);
-          return database.create('_PushStatus', p, {});
-        }))
+        const pushStatus = Parse.Object.fromJSON(Object.assign({ className: '_PushStatus' }, p));
+        pushCampaign.add('pushes', pushStatus);
+        return database.create('_PushStatus', p, {});
+      }))
         // Save the added 'pushes'
         .then(() => pushCampaign.save(null, { useMasterKey: true }));
     });
