@@ -90,11 +90,24 @@ describe('runPushCampaigns', () => {
     campaign.set('status', 'active');
     campaign.set('interval', 'daily');
     campaign.set('query', {});
-    campaign.set('data', {
-      alert: 'Test push',
-      uri: 'foo://bar/baz?qux=1',
-      url: 'foo://bar/baz?qux=1',
-    });
+    campaign.set('variants', [
+      {
+        percent: 50,
+        data: {
+          alert: 'Test push A',
+          uri: 'foo://bar/baz?qux=1',
+          url: 'foo://bar/baz?qux=1',
+        },
+      },
+      {
+        percent: 50,
+        data: {
+          alert: 'Test push B',
+          uri: 'foo://bar/baz?qux=1',
+          url: 'foo://bar/baz?qux=1',
+        },
+      },
+    ]);
 
     const now = moment();
     now.add(1, 'second');
@@ -109,7 +122,7 @@ describe('runPushCampaigns', () => {
         const pushes = campaign.get('pushes');
         expect(pushes).toBeDefined();
         expect(pushes.length).toBeDefined();
-        expect(pushes.length).toBe(1);
+        expect(pushes.length).toBe(2);
 
         const q = new Parse.Query('_PushStatus');
         return q.get(pushes[0].id, { useMasterKey: true });

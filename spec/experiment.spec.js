@@ -80,7 +80,7 @@ describe('experiment', () => {
   });
 
   describe('getDistributionRange', () => {
-    fit('should work for a single variant', () => {
+    it('should work for a single variant', () => {
       const variants = [ { percent: 100 } ];
       const { min, max } = getDistributionRange(variants, 0);
 
@@ -88,7 +88,7 @@ describe('experiment', () => {
       expect(max).toBe(DISTRIBUTION_MAX);
     });
 
-    fit('should work for 2 variants', () => {
+    it('should work for 2 variants', () => {
       const variants = [ { percent: 51 }, { percent: 49 } ];
       const { min, max } = getDistributionRange(variants, 1);
       expect(min).toBe(136902083);

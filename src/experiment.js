@@ -42,6 +42,10 @@ module.exports = {
       max += Math.round((percent * DISTRIBUTION_MAX) / 100);
     }
 
+    if (max === 0) {
+      max = DISTRIBUTION_MAX;
+    }
+
     return { min, max };
   },
 };

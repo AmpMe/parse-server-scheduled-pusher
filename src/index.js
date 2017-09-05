@@ -33,7 +33,7 @@ module.exports = {
   processPushBatch({ offset, query, body, pushStatus }, parseConfig, pushAdapter, now) {
     return Promise.resolve(parseConfig.database.find('_Installation', query.where, query))
       .filter((installation) => {
-        const distribution = pushStatus.get('distribution');
+        const { distribution } = pushStatus;
         if (distribution) {
           const { min, max, salt } = distribution;
           const bucketValue = computeBucketValue(installation.id, salt);
@@ -45,7 +45,7 @@ module.exports = {
       .map((installation) => pushAdapter.send({
         data: JSON.parse(body),
         where: { objectId: installation.id },
-      }))
+      }, [ installation ], pushStatus))
       .then((pushResults) => trackSent(pushStatus.objectId, offset, pushResults, parseConfig.database, now));
   },
 

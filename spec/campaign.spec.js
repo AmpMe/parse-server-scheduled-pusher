@@ -1,4 +1,5 @@
 const Config = require('parse-server/lib/Config');
+const { DISTRIBUTION_MAX } = require('../src/experiment');
 const { dropDB } = require('parse-server-test-runner');
 
 const { createScheduledPush, getNextPushTime } = require('../src/campaign');
@@ -151,12 +152,15 @@ describe('createScheduledPush', () => {
   afterAll((done) => dropDB().then(done, done.fail));
 
   it('should create a _PushStatus', () => {
-    expect(pushCampaign.get('data')).toBeDefined();
+    expect(pushCampaign.get('variants')).toBeDefined();
     expect(pushCampaign.get('pushes')).toBeDefined();
 
     const pushStatus = pushCampaign.get('pushes')[0].toJSON();
     delete pushStatus.__type;
     delete pushStatus.objectId;
+
+    const { distribution } = pushStatus;
+    delete pushStatus.distribution;
 
     expect(pushStatus).toEqual({
       pushTime: '2017-08-10T23:00:00.000Z',
@@ -170,6 +174,11 @@ describe('createScheduledPush', () => {
       updatedAt: '1970-01-01T00:00:00.000Z',
       ACL: {},
     });
+
+    expect(distribution).toBeDefined();
+    expect(distribution.salt).toBeDefined();
+    expect(distribution.min).toBe(0);
+    expect(distribution.max).toBe(DISTRIBUTION_MAX);
   });
 
   describe('running twice before the next interval', () => {
