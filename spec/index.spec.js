@@ -63,6 +63,7 @@ describe('Sending scheduled pushes', () => {
       where: {},
     }, { useMasterKey: true })
       .then(() => sendScheduledPushes(parseConfig, publisher, now))
+      .then(() => Promise.delay(1000))
       .then(() => pwiReceivePromise)
       .then(() => {
         expect(mockPushState.sent).toBe(installations.length);
