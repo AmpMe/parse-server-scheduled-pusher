@@ -34,7 +34,7 @@ module.exports = {
   },
 
   getDistributionRange(variants, index) {
-    const sumPercents = variants.reduce((acc, { percent }) => acc + percent);
+    const sumPercents = variants.reduce((acc, { percent }) => acc + percent, 0);
     if (sumPercents !== 100) {
       throw new Error('Variant percents must add up to 100%');
     }

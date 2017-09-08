@@ -10,10 +10,11 @@ module.exports = {
 
   trackSent(pushStatusId, offset, pushResults, database, now) {
     now = now || new Date();
+
     let numSent = 0;
     let numFailed = 0;
-    for (const result of pushResults) {
-      if (result.transmitted) {
+    for (const { transmitted } of pushResults) {
+      if (transmitted) {
         numSent++;
       } else {
         numFailed++;

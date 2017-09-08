@@ -8,7 +8,7 @@ const { PushCampaign } = require('./query');
 const { getDistributionRange } = require('../src/experiment');
 
 function getNextPushTime({ interval, sendTime, dayOfWeek, dayOfMonth }, now) {
-  const parsedSendTime = new Date(moment(sendTime, 'hh:mm:ss').toDate());
+  const parsedSendTime = moment(sendTime, 'hh:mm:ss').toDate();
   const pushTime = new Date(now);
 
   pushTime.setUTCHours(parsedSendTime.getUTCHours());
@@ -82,7 +82,7 @@ function createScheduledPush(pushCampaign, database, now) {
       // NOTE: Creating a _PushStatus for N variants means that the Installations
       // have to be fetched N times.
       const pushStatuses = pushCampaign.get('variants')
-        .map((variant, i) => {
+        .map((variant, i, variants) => {
           const { data } = variant;
           const objectId = newObjectId();
           const payload = JSON.stringify(data);
@@ -95,7 +95,7 @@ function createScheduledPush(pushCampaign, database, now) {
             pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
           }
 
-          const distribution = getDistributionRange(variant, i);
+          const distribution = getDistributionRange(variants, i);
           return {
             objectId,
             createdAt: now,

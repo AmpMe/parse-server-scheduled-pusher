@@ -1,5 +1,4 @@
 const Promise = require('bluebird');
-const moment = require('moment');
 const Parse = require('parse/node');
 const Config = require('parse-server/lib/Config');
 const { EventEmitterMQ } = require('parse-server/lib/Adapters/MessageQueue/EventEmitterMQ');
@@ -52,7 +51,7 @@ describe('Sending scheduled pushes', () => {
   });
 });
 
-describe('runPushCampaigns', () => {
+fdescribe('runPushCampaigns', () => {
   beforeAll(setupInstallations);
 
   it('should work', (done) => {
@@ -81,14 +80,29 @@ describe('runPushCampaigns', () => {
       },
     ]);
 
-    const now = moment();
-    now.add(1, 'second');
-    campaign.set('sendTime', now.format('HH:mm:ss'));
+    const now = new Date('2017-08-24T17:27:43.105Z');
 
+    // All the installations are in Brazil.
+    // Brazil is -03:00
+    campaign.set('sendTime', '14:27:44');
+
+    const publisher = EventEmitterMQ.createPublisher();
+    const subscriber = EventEmitterMQ.createSubscriber();
+
+    const pwiReceivePromise = new Promise((resolve, reject) => {
+      subscriber.subscribe('pushWorkItem');
+      subscriber.on('message', (channel, rawMsg) => {
+        const pwi = JSON.parse(rawMsg);
+        processPushBatch(pwi, parseConfig, pushAdapter, now)
+          .then(resolve, reject);
+      });
+    });
+
+    mockPushState.sent = 0;
     campaign.save({ useMasterKey: true })
-      .then(() => runPushCampaigns(parseConfig))
+      .then(() => runPushCampaigns(parseConfig, now))
       .then(() => Promise.delay(2000))
-      .then(() => sendScheduledPushes(parseConfig, pushAdapter))
+      .then(() => sendScheduledPushes(parseConfig, publisher, now))
       .then(() => campaign.fetch({ useMasterKey: true }))
       .then((campaign) => {
         const pushes = campaign.get('pushes');
@@ -97,7 +111,17 @@ describe('runPushCampaigns', () => {
         expect(pushes.length).toBe(2);
 
         const q = new Parse.Query('_PushStatus');
-        return q.get(pushes[0].id, { useMasterKey: true });
+        q.containedIn('objectId', pushes.map((p) => p.id));
+        return q.find({ useMasterKey: true });
+      })
+      .then((pushes) => {
+        pushes.forEach((p) => {
+          expect(p.get('distribution')).toBeDefined();
+          expect(p.get('status')).toBe('scheduled');
+          expect(p.get('sentPerUTCOffset')[180]).toBeGreaterThan(0);
+          expect(p.get('failedPerUTCOffset')[180]).toBe(0);
+        });
+        expect(mockPushState.sent).toBe(installations.length);
       })
       .then(done, done.fail);
   });

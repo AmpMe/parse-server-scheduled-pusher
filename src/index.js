@@ -5,11 +5,7 @@ const { createPushWorkItems, batchPushWorkItem } = require('./schedule');
 const { addOffsetCounts, trackSent, markAsComplete } = require('./statusHandler');
 const { createScheduledPush } = require('./campaign');
 const { computeBucketValue } = require('./experiment');
-
-const flatten = (arr) => arr.reduce((a, b) => (
-  Array.isArray(b) ? a.concat(flatten(b))
-    : a.concat(b)
-), []);
+const { flatten } = require('./util');
 
 module.exports = {
   sendScheduledPushes(parseConfig, publisher, now) {
@@ -37,7 +33,7 @@ module.exports = {
         if (distribution) {
           const { min, max, salt } = distribution;
           const bucketValue = computeBucketValue(installation.id, salt);
-          return min <= bucketValue && max >= bucketValue;
+          return bucketValue >= min && bucketValue <= max;
         }
 
         return true;
@@ -46,11 +42,12 @@ module.exports = {
         data: JSON.parse(body),
         where: { objectId: installation.id },
       }, [ installation ], pushStatus))
-      .then((pushResults) => trackSent(pushStatus.objectId, offset, pushResults, parseConfig.database, now));
+      .then((pushResults) => trackSent(pushStatus.objectId, offset, flatten(pushResults), parseConfig.database, now));
   },
 
-  runPushCampaigns(parseConfig) {
+  runPushCampaigns(parseConfig, now) {
+    now = now || new Date();
     return Promise.resolve(getActiveCampaigns())
-      .each((campaign) => createScheduledPush(campaign, parseConfig.database));
+      .each((campaign) => createScheduledPush(campaign, parseConfig.database, now));
   },
 };

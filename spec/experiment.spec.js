@@ -80,7 +80,7 @@ describe('experiment', () => {
   });
 
   describe('getDistributionRange', () => {
-    fit('should error on invalid variants', () => {
+    it('should error on invalid variants', () => {
       let variants = [ { percent: 20 }, { percent: 100 } ]; // > 100%
       expect(() => getDistributionRange(variants, 0)).toThrow();
 

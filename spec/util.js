@@ -42,14 +42,18 @@ function getCampaignWithPushes(pushCampaign) {
 const installations = require('./fixtures/installations.json');
 function setupInstallations(done) {
   const config = new Config('test', '/1');
-  return dropDB()
-    .then(() => Promise.all(installations.map((i) => create(config, master(config), '_Installation', {
-      deviceToken: i.deviceToken,
-      deviceType: i.deviceType,
-      timeZone: i.timeZone,
-    }))))
+  const p = dropDB()
+    .then(() => Promise.all(installations.map((inst, i) => create(config, master(config), '_Installation', {
+      id: i.toString(),
+      deviceToken: inst.deviceToken,
+      deviceType: inst.deviceType,
+      timeZone: inst.timeZone,
+    }))));
 
-    .then(done, done.fail);
+  if (done) {
+    return p.then(done, done.fail);
+  }
+  return p;
 }
 
 module.exports = {
