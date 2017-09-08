@@ -5,15 +5,18 @@ const { dropDB } = require('parse-server-test-runner');
 const { getScheduledPushes } = require('../src/query');
 const { addOffsetCounts, markAsComplete, trackSent } = require('../src/statusHandler');
 
+const { stripTimezone } = require('./util');
+
 describe('statusHandler', () => {
-  function sendNotification() {
+  function sendNotification(inLocalTime=true) {
     const now = new Date('2017-07-20T12:20:40.730Z');
     const pushTime = new Date(now);
     pushTime.setHours(9);
     pushTime.setMinutes(20);
 
     const notification = {
-      push_time: pushTime,
+      push_time: inLocalTime ? stripTimezone(pushTime)
+        : pushTime.toISOString(),
       where: { createdAt: { $gt: { __type: 'Date', iso: '2017-06-21T14:23:00.000Z' } } },
       data: {
         alert: 'Alert!!!!!',
@@ -58,7 +61,7 @@ describe('statusHandler', () => {
         .then(([ pushStatus ]) => {
           const config = new Config('test', '/1');
           const results = [ { transmitted: true }, { transmitted: false }, { transmitted: true } ];
-          return trackSent(pushStatus.id, 180, results, config.database);
+          return trackSent(pushStatus, 180, results, config.database, new Date, true);
         })
         .then(getScheduledPushes)
         .then(([ pushStatus ]) => {
@@ -98,9 +101,11 @@ describe('statusHandler', () => {
       const config = new Config('test', '/1');
       const objectId = '4VcMrkO432';
 
+      let pushStatus;
       send(objectId, longTimeAgo, config.database)
+        .then((p) => pushStatus = p)
         .then(() => addOffsetCounts(objectId, 180, config.database, now))
-        .then(() => trackSent(objectId, 180, [ { transmitted: false } ], config.database, now))
+        .then(() => trackSent(pushStatus, 180, [ { transmitted: false } ], config.database, now))
         .then(() => fetch(objectId, config.database))
         .then((pushStatus) => markAsComplete(pushStatus, config.database, now))
 
@@ -114,9 +119,11 @@ describe('statusHandler', () => {
       const config = new Config('test', '/1');
       const objectId = '3DXht7WvuZ';
 
+      let pushStatus;
       send(objectId, longTimeAgo, config.database)
+        .then((p) => pushStatus = p)
         .then(() => addOffsetCounts(objectId, 180, config.database, now))
-        .then(() => trackSent(objectId, 180, [ { transmitted: true } ], config.database, now))
+        .then(() => trackSent(pushStatus, 180, [ { transmitted: true } ], config.database, now))
 
         .then(() => fetch(objectId, config.database))
         .then((pushStatus) => markAsComplete(pushStatus, config.database, now))

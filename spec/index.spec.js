@@ -34,41 +34,41 @@ describe('Sending scheduled pushes', () => {
       .then(done, done.fail);
   });
 
-  it('should work', (done) => {
-    const parseConfig = new Config('test', '/1');
+  describe('in local time', () => {
+    it('should work', (done) => {
+      const parseConfig = new Config('test', '/1');
 
-    const now = new Date('2017-08-24T17:27:43.105Z');
-    const pushTime = new Date(new Date('2017-08-24T14:27:43.105Z') - 5);
+      const now = new Date('2017-08-24T17:27:43.105Z');
 
-    const publisher = EventEmitterMQ.createPublisher();
-    const subscriber = EventEmitterMQ.createSubscriber();
+      const publisher = EventEmitterMQ.createPublisher();
+      const subscriber = EventEmitterMQ.createSubscriber();
 
-    const pwiReceivePromise = new Promise((resolve, reject) => {
-      subscriber.subscribe('pushWorkItem');
-      subscriber.on('message', (channel, rawMsg) => {
-        const pwi = JSON.parse(rawMsg);
-        processPushBatch(pwi, parseConfig, pushAdapter, now)
-          .then(resolve, reject);
+      const pwiReceivePromise = new Promise((resolve, reject) => {
+        subscriber.subscribe('pushWorkItem');
+        subscriber.on('message', (channel, rawMsg) => {
+          const pwi = JSON.parse(rawMsg);
+          processPushBatch(pwi, parseConfig, pushAdapter, now)
+            .then(resolve, reject);
+        });
       });
-    });
 
-    Parse.Push.send({
-      push_time: pushTime,
-      data: {
-        alert: 'Alert!!!!!',
-        uri: 'foo://bar?baz=qux',
-        url: 'foo://bar?baz=qux',
-        type: 'bar',
-      },
-      where: {},
-    }, { useMasterKey: true })
-      .then(() => sendScheduledPushes(parseConfig, publisher, now))
-      .then(() => Promise.delay(1000))
-      .then(() => pwiReceivePromise)
-      .then(() => {
-        expect(mockPushState.sent).toBe(installations.length);
-      })
-      .then(done, done.fail);
+      Parse.Push.send({
+        push_time: '2017-08-24T14:27:40.000',
+        data: {
+          alert: 'Alert!!!!!',
+          uri: 'foo://bar?baz=qux',
+          url: 'foo://bar?baz=qux',
+          type: 'bar',
+        },
+        where: {},
+      }, { useMasterKey: true })
+        .then(() => sendScheduledPushes(parseConfig, publisher, now))
+        .then(() => pwiReceivePromise)
+        .then(() => {
+          expect(mockPushState.sent).toBe(installations.length);
+        })
+        .then(done, done.fail);
+    });
   });
 });
 
@@ -104,7 +104,18 @@ describe('runPushCampaigns', () => {
     campaign.save({ useMasterKey: true })
       .then(() => runPushCampaigns(parseConfig))
       .then(() => Promise.delay(2000))
-      .then(() => sendScheduledPushes(parseConfig, pushAdapter))
+      .then(() => {
+        const publisher = EventEmitterMQ.createPublisher();
+        const subscriber = EventEmitterMQ.createSubscriber();
+
+        subscriber.subscribe('pushWorkItem');
+        subscriber.on('message', (channel, rawMsg) => {
+          const pwi = JSON.parse(rawMsg);
+          processPushBatch(pwi, parseConfig, pushAdapter);
+        });
+
+        return sendScheduledPushes(parseConfig, publisher);
+      })
       .then(() => campaign.fetch({ useMasterKey: true }))
       .then((campaign) => {
         const pushes = campaign.get('pushes');

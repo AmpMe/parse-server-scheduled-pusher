@@ -9,8 +9,7 @@
   "scripts": {
     "start": "TZ=UTC node bin/parse-server-scheduled-pusher",
     "lint": "eslint src spec bin",
-    "pretest": "npm run lint",
-    "test": "TZ=UTC TESTING=1 nyc jasmine"
+    "test": "TZ=UTC TESTING=1 jasmine"
   },
   "engines": {
     "node": ">=6"
