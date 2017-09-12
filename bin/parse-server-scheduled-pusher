@@ -44,13 +44,8 @@ const publisher = ParseMessageQueue.createPublisher(parseConfig);
 const subscriber = ParseMessageQueue.createSubscriber(parseConfig);
 
 if (process.env.PUSH_CHECKER) {
-  setInterval(() => {
-    sendScheduledPushes(parseConfig, publisher);
-  }, process.env.SCHEDULE_CHECK_INTERVAL || 30 * 1000);
-
-  setInterval(() => {
-    runPushCampaigns(parseConfig);
-  }, process.env.SCHEDULE_CHECK_INTERVAL + 5000 || 35 * 1000);
+  sendScheduledPushes(parseConfig, publisher);
+  runPushCampaigns(parseConfig);
 }
 
 if (process.env.PUSH_WORKER) {
