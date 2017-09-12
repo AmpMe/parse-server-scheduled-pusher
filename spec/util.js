@@ -18,7 +18,7 @@ function createCampaign(
     .set('sendTime', '23:00:00')
     .set('query', '{"user":{"__type":"Pointer","className":"_User","objectId":"0K1kfQnyj6"}}')
     .set('variants', [ {
-      percent: 100,
+      ratio: 1,
       data: {
         alert: 'ALERT!!',
         uri: 'foo://bar?baz=qux',

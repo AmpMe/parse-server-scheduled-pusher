@@ -33,18 +33,36 @@ module.exports = {
     return parseInt(value, 16);
   },
 
-  getDistributionRange(variants, index) {
-    const sumPercents = variants.reduce((acc, { percent }) => acc + percent, 0);
-    if (sumPercents !== 100) {
-      throw new Error('Variant percents must add up to 100%');
+  sortVariants(variants) {
+    variants = variants.slice(); // Shallow copy
+    variants.sort((vA, vB) => {
+      const nameA = vA.name.toLowerCase();
+      const nameB = vB.name.toLowerCase();
+      if (nameA < nameB) {
+        return -1;
+      }
+      if (nameA > nameB) {
+        return 1;
+      }
+      return 0;
+    });
+    return variants;
+  },
+
+  getDistributionRange(sortedVariants, index) {
+    const sumRatios = sortedVariants.reduce((acc, { ratio }) => acc + ratio, 0);
+    // If you're have floating point arithmetic problems I feel bad for you son.
+    // I got 99.99 problems, but a rounding error ain't one.
+    if (sumRatios > 1.01) {
+      throw new Error('The sum of all ratios cannot be greater than 1');
     }
 
     let min = 0;
     let max = 0;
     for (let i = 0; i <= index; i++) {
-      const { percent } = variants[i];
+      const { ratio } = sortedVariants[i];
       min = max;
-      max += Math.round((percent * DISTRIBUTION_MAX) / 100);
+      max += Math.round((ratio * DISTRIBUTION_MAX));
     }
 
     if (max === 0) {

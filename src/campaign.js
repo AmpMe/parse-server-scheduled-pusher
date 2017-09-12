@@ -5,7 +5,7 @@ const { md5Hash } = require('parse-server/lib/cryptoUtils');
 
 const { PushCampaign } = require('./query');
 
-const { getDistributionRange } = require('../src/experiment');
+const { getDistributionRange, sortVariants } = require('./experiment');
 
 function getNextPushTime({ interval, sendTime, dayOfWeek, dayOfMonth }, now) {
   const parsedSendTime = moment(sendTime, 'hh:mm:ss').toDate();
@@ -81,8 +81,8 @@ function createScheduledPush(pushCampaign, database, now) {
 
       // NOTE: Creating a _PushStatus for N variants means that the Installations
       // have to be fetched N times.
-      const pushStatuses = pushCampaign.get('variants')
-        .map((variant, i, variants) => {
+      const pushStatuses = sortVariants(pushCampaign.get('variants'))
+        .map((variant, i, sortedVariants) => {
           const { data } = variant;
           const objectId = newObjectId();
           const payload = JSON.stringify(data);
@@ -95,7 +95,7 @@ function createScheduledPush(pushCampaign, database, now) {
             pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
           }
 
-          const distribution = getDistributionRange(variants, i);
+          const distribution = getDistributionRange(sortedVariants, i);
           return {
             objectId,
             createdAt: now,

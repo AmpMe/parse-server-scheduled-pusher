@@ -81,10 +81,7 @@ describe('experiment', () => {
 
   describe('getDistributionRange', () => {
     it('should error on invalid variants', () => {
-      let variants = [ { percent: 20 }, { percent: 100 } ]; // > 100%
-      expect(() => getDistributionRange(variants, 0)).toThrow();
-
-      variants = [ { percent: 20 } ]; // < 100%
+      const variants = [ { ratio: .2 }, { ratio: 1 } ]; // > 100%
       expect(() => getDistributionRange(variants, 0)).toThrow();
 
       const noVariants = []; // no variants
@@ -92,7 +89,7 @@ describe('experiment', () => {
     });
 
     it('should work for a single variant', () => {
-      const variants = [ { percent: 100 } ];
+      const variants = [ { ratio: 1 } ];
       const { min, max } = getDistributionRange(variants, 0);
 
       expect(min).toBe(0);
@@ -100,7 +97,7 @@ describe('experiment', () => {
     });
 
     it('should work for 2 variants', () => {
-      const variants = [ { percent: 51 }, { percent: 49 } ];
+      const variants = [ { ratio: .51 }, { ratio: .49 } ];
       const { min, max } = getDistributionRange(variants, 1);
       expect(min).toBe(136902083);
       expect(max).toBe(DISTRIBUTION_MAX);

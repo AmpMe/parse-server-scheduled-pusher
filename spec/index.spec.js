@@ -51,7 +51,7 @@ describe('Sending scheduled pushes', () => {
   });
 });
 
-fdescribe('runPushCampaigns', () => {
+describe('runPushCampaigns', () => {
   beforeAll(setupInstallations);
 
   it('should work', (done) => {
@@ -63,7 +63,8 @@ fdescribe('runPushCampaigns', () => {
     campaign.set('query', {});
     campaign.set('variants', [
       {
-        percent: 51,
+        name: 'A',
+        ratio: .51,
         data: {
           alert: 'Test push A',
           uri: 'foo://bar/baz?qux=1',
@@ -71,7 +72,8 @@ fdescribe('runPushCampaigns', () => {
         },
       },
       {
-        percent: 49,
+        name: 'A',
+        ratio: .49,
         data: {
           alert: 'Test push B',
           uri: 'foo://bar/baz?qux=1',
@@ -103,6 +105,7 @@ fdescribe('runPushCampaigns', () => {
       .then(() => runPushCampaigns(parseConfig, now))
       .then(() => Promise.delay(2000))
       .then(() => sendScheduledPushes(parseConfig, publisher, now))
+      .then(pwiReceivePromise)
       .then(() => campaign.fetch({ useMasterKey: true }))
       .then((campaign) => {
         const pushes = campaign.get('pushes');
