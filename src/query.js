@@ -13,9 +13,19 @@ function batchQuery(where, batchSize, count, order = 'createdAt') {
   return items;
 }
 
-function getScheduledPushes() {
+function getScheduledPushes(now) {
+  now = now || new Date();
+
   const pushStatusesQ = new Parse.Query('_PushStatus');
-  return pushStatusesQ.equalTo('status', 'scheduled')
+  return pushStatusesQ.containedIn('status', [ 'scheduled', 'running' ])
+    .then((pushStatuses) => pushStatuses.filter((pushStatus) => {
+      // TODO note.
+      if (pushStatus.get('status') === 'running' && !pushStatus.get('sentPerUTCOffset')) {
+        return false;
+      }
+
+      return true;
+    }))
     .find({ useMasterKey: true });
 }
 

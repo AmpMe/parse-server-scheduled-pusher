@@ -56,7 +56,7 @@ function getNextPushTime({ interval, sendTime, dayOfWeek, dayOfMonth }, now) {
   }
 }
 
-function createScheduledPush(pushCampaign, database, now) {
+function createScheduledPush(pushCampaign, now) {
   now = now || new Date();
 
   const nextPushTime = getNextPushTime({
@@ -84,7 +84,6 @@ function createScheduledPush(pushCampaign, database, now) {
       const pushStatuses = sortVariants(pushCampaign.get('variants'))
         .map((variant, i, sortedVariants) => {
           const { data } = variant;
-          const objectId = newObjectId();
           const payload = JSON.stringify(data);
           let pushHash;
           if (typeof data.alert === 'string') {
@@ -96,29 +95,24 @@ function createScheduledPush(pushCampaign, database, now) {
           }
 
           const distribution = getDistributionRange(sortedVariants, i);
-          return {
-            objectId,
-            createdAt: now,
+          return Parse.Object.fromJSON({
+            className: '_PushStatus',
             pushTime: nextPushTime.toISOString(),
-            query: JSON.stringify(pushCampaign.get('query')),
+            query: pushCampaign.get('query'),
             payload,
             source: 'parse-scheduled-pusher',
             status: 'scheduled',
             pushHash,
             distribution: Object.assign(distribution, { salt: pushCampaign.id }),
-
-            // lockdown!
-            ACL: {},
-          };
+          });
         });
 
-      return Promise.all(pushStatuses.map((p) => {
-        const pushStatus = Parse.Object.fromJSON(Object.assign({ className: '_PushStatus' }, p));
-        pushCampaign.add('pushes', pushStatus);
-        return database.create('_PushStatus', p, {});
-      }))
+      return Parse.Object.saveAll(pushStatuses, { useMasterKey: true })
         // Save the added 'pushes'
-        .then(() => pushCampaign.save(null, { useMasterKey: true }));
+        .then(() => {
+          pushCampaign.set('pushes', pushStatuses);
+          return pushCampaign.save(null, { useMasterKey: true });
+        });
     });
 }
 

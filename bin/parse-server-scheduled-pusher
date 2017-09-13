@@ -1,57 +1,23 @@
 #!/usr/bin/env node
-const http = require('http');
-const express = require('express');
-
 const Parse = require('parse/node');
-const { ParseServer } = require('parse-server');
-const AppCache = require('parse-server/lib/cache').default;
-const Config = require('parse-server/lib/Config');
-const { ParseMessageQueue } = require('parse-server/lib/ParseMessageQueue');
+const { sendScheduledPushes } = require('../src');
 
-const { sendScheduledPushes, runPushCampaigns, processPushBatch } = require('../src');
+Parse.initialize(
+  process.env.PARSE_APPLICATION_ID,
+  process.env.PARSE_JAVASCRIPT_KEY,
+  process.env.PARSE_MASTER_KEY
+);
 
-let config;
-if (process.env.NODE_ENV === 'production') {
-  config = require('../config/production');
-} else {
-  config = require('../config/development');
+const messageQueueAdapter = require(process.env.PARSE_MESSAGE_QUEUE_ADAPTER);
+if (typeof messageQueueAdapter.createPublisher !== 'function') {
+  throw new Error('Invalid adapter');
 }
 
-const parsePort = 3737;
-const parseServerOptions = Object.assign({
-  masterKey: 'master',
-  javascriptKey: 'jskey',
-  appId: 'parse-scheduled-pusher',
-  databaseURI: process.env.DATABASE_URI,
-  serverURL: `http://localhost:${parsePort}/1`,
-  hasPushSupport: true,
-  hasPushScheduledSupport: true,
-  scheduledPush: true,
-}, config);
-
-const parseServer = new ParseServer(parseServerOptions);
-const app = express();
-app.use('/1', parseServer);
-http.createServer(app).listen(parsePort);
-
-Parse.initialize(parseServerOptions.appId, parseServerOptions.javascriptKey, parseServerOptions.masterKey);
-Parse.serverURL = `http://localhost:${parsePort}/1`;
-
-const parseConfig = new Config(parseServerOptions.appId, '/1');
-const pushAdapter = AppCache.get(parseServerOptions.appId).pushWorker.adapter;
-
-const publisher = ParseMessageQueue.createPublisher(parseConfig);
-const subscriber = ParseMessageQueue.createSubscriber(parseConfig);
-
-if (process.env.PUSH_CHECKER) {
-  sendScheduledPushes(parseConfig, publisher);
-  runPushCampaigns(parseConfig);
+const channel = process.env.PARSE_PUSH_CHANNEL;
+if (typeof channel !== 'string') {
+  throw new Error('Invalid channel');
 }
 
-if (process.env.PUSH_WORKER) {
-  subscriber.subscribe('pushWorkItem');
-  subscriber.on('message', (channel, rawMsg) => {
-    const pwi = JSON.parse(rawMsg);
-    processPushBatch(pwi, parseConfig, pushAdapter);
-  });
-}
+const publisher = messageQueueAdapter.createPublisher();
+sendScheduledPushes(publisher, channel);
+// runPushCampaigns();
