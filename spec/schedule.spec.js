@@ -13,6 +13,8 @@ const {
 } = require('../src/schedule');
 const { getScheduledPushes } = require('../src/query');
 
+const { stripTimezone } = require('./util');
+
 describe('getUnsentOffsets', () => {
   const sentPerUTCOffset = {
     0: 123,
@@ -128,7 +130,7 @@ describe('createPushWorkItems', () => {
     pushTime.setMinutes(20);
 
     const notification = {
-      push_time: pushTime,
+      push_time: stripTimezone(pushTime),
       where: { createdAt: { $gt: { __type: 'Date', iso: '2017-06-21T14:23:00.000Z' } } },
       data: {
         alert: 'Alert!!!!!',

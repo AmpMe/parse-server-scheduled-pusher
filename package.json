@@ -20,9 +20,9 @@
     "express": "^4.15.3",
     "moment": "^2.18.1",
     "parse": "^1.10.0",
-    "parse-server": "^2.5.3",
+    "parse-server": "git://github.com/marvelm/parse-server.git#latest",
     "parse-server-push-adapter": "^2.0.0",
-    "parse-server-test-runner": "git://github.com/AmpMe/parse-server-test-runner.git",
+    "parse-server-test-runner": "git://github.com/AmpMe/parse-server-test-runner.git#peer-deps",
     "time": "^0.12.0"
   },
   "devDependencies": {

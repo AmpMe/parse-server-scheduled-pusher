@@ -1,4 +1,5 @@
 const Promise = require('bluebird');
+const Parse = require('parse/node');
 
 const { getScheduledPushes, getActiveCampaigns } = require('./query');
 const { createPushWorkItems, batchPushWorkItem } = require('./schedule');
@@ -15,7 +16,7 @@ module.exports = {
     now = now || new Date();
     return Promise.resolve(getScheduledPushes())
       // Pick only the incomplete pushes
-      .filter((push) => markAsComplete(push, parseConfig.database).then((res) => !res))
+      .filter((push) => markAsComplete(push, parseConfig.database, now).then((res) => !res))
       .map((pwi) => createPushWorkItems(pwi, now))
       .then(flatten)
 
@@ -30,12 +31,13 @@ module.exports = {
   },
 
   processPushBatch({ offset, query, body, pushStatus }, parseConfig, pushAdapter, now) {
+    pushStatus = Parse.Object.fromJSON(Object.assign({ className: '_PushStatus' }, pushStatus));
     return parseConfig.database.find('_Installation', query.where, query)
       .then((installations) => pushAdapter.send(
         { data: JSON.parse(body), where: query.where },
         installations
       ))
-      .then((pushResults) => trackSent(pushStatus.objectId, offset, pushResults, parseConfig.database, now));
+      .then((pushResults) => trackSent(pushStatus, offset, pushResults, parseConfig.database, now));
   },
 
   runPushCampaigns(parseConfig) {

@@ -3,6 +3,7 @@ const moment = require('moment-timezone');
 const Parse = require('parse/node');
 const { master } = require('parse-server/lib/Auth');
 const { find } = require('parse-server/lib/rest');
+const { pushTimeHasTimezoneComponent } = require('parse-server/lib/Controllers/PushController').default;
 
 const { offsetToTimezones } = require('./offsets');
 const { batchQuery } = require('./query');
@@ -36,20 +37,20 @@ function getCurrentOffsets(offsets, pushTime, now) {
   });
 }
 
+const ABSOLUTE_TIME = 'absolute-time'; // 2017-09-06T13:27:04+02:00
+
 // Generates a PushWorkItem for each offset
 function createPushWorkItems(pushStatus, now) {
   now = now || new Date();
 
-  const pushTime = new Date(pushStatus.get('pushTime'));
-  const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset') || {};
-
-  const unsentOffsets = getUnsentOffsets(sentPerUTCOffset);
-  const offsetsToSend = getCurrentOffsets(unsentOffsets, pushTime, now);
-
-  return offsetsToSend.map((offset) => {
-    const timezonesToSend = offsetToTimezones[offset];
-    const installationsQ = Parse.Query.fromJSON('_Installation', { where: JSON.parse(pushStatus.get('query')) });
-    installationsQ.containedIn('timeZone', timezonesToSend);
+  const offsetToPwi = (offset, includeTimezones=true) => {
+    const installationsQ = Parse.Query.fromJSON('_Installation', {
+      where: JSON.parse(pushStatus.get('query')),
+    });
+    if (includeTimezones) {
+      const timezonesToSend = offsetToTimezones[offset];
+      installationsQ.containedIn('timeZone', timezonesToSend);
+    }
 
     return {
       body: pushStatus.get('payload'),
@@ -57,7 +58,22 @@ function createPushWorkItems(pushStatus, now) {
       pushStatus,
       offset,
     };
-  });
+  };
+
+  let pushTime = pushStatus.get('pushTime');
+  if (pushTimeHasTimezoneComponent(pushTime)) {
+     // The `count` implies that the push work item has already been created
+    if (!pushStatus.get('count')) {
+      return [ offsetToPwi(ABSOLUTE_TIME, false) ];
+    }
+    return [];
+  }
+
+  pushTime = new Date(pushTime);
+  const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset') || {};
+  const unsentOffsets = getUnsentOffsets(sentPerUTCOffset);
+  const offsetsToSend = getCurrentOffsets(unsentOffsets, pushTime, now);
+  return offsetsToSend.map((offset) => offsetToPwi(offset));
 }
 
 function batchPushWorkItem(
@@ -78,4 +94,6 @@ module.exports = {
   getUnsentOffsets,
   createPushWorkItems,
   batchPushWorkItem,
+
+  ABSOLUTE_TIME,
 };

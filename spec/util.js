@@ -31,8 +31,13 @@ function getCampaignWithPushes(pushCampaign) {
     .get(pushCampaign.id, { useMasterKey: true });
 }
 
+function stripTimezone(d) {
+  const isoStr = d.toISOString();
+  return isoStr.substring(0, isoStr.length - 1);
+}
 
 module.exports = {
   createCampaign,
   getCampaignWithPushes,
+  stripTimezone,
 };
