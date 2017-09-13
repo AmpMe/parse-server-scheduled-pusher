@@ -1,8 +1,6 @@
 /* eslint-disable max-len */
 const Parse = require('parse/node');
 const Config = require('parse-server/lib/Config');
-const { master } = require('parse-server/lib/Auth');
-const { create } = require('parse-server/lib/rest');
 const { dropDB } = require('parse-server-test-runner');
 
 const {
@@ -13,7 +11,7 @@ const {
 } = require('../src/schedule');
 const { getScheduledPushes } = require('../src/query');
 
-const { stripTimezone } = require('./util');
+const { setupInstallations, stripTimezone } = require('./util');
 
 describe('getUnsentOffsets', () => {
   const sentPerUTCOffset = {
@@ -166,22 +164,10 @@ describe('createPushWorkItems', () => {
 describe('batchPushWorkItem', () => {
   it('should take one PushWorkItem and produce paginated PushWorkItems', (done) => {
     const pwi = require('./fixtures/pushWorkItem.json');
-    const installations = require('./fixtures/installations.json');
     const config = new Config('test', '/1');
 
-    // Remove special Parse fields like '_created_at' and '_updated_at'
-    Object.keys(installations).forEach((key) => {
-      if (key.startsWith('_')) {
-        delete installations[key];
-      }
-    });
-
     return dropDB()
-      .then(() => Promise.all(installations.map((i) => create(config, master(config), '_Installation', {
-        deviceToken: i.deviceToken,
-        deviceType: i.deviceType,
-        timeZone: i.timeZone,
-      }))))
+      .then(setupInstallations)
       .then(() => batchPushWorkItem(pwi, config, 3))
       .then((batches) => {
         expect(batches.length).toBeDefined('Batches should be an Array');

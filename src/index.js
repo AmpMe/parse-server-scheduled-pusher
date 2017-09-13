@@ -5,11 +5,8 @@ const { getScheduledPushes, getActiveCampaigns } = require('./query');
 const { createPushWorkItems, batchPushWorkItem } = require('./schedule');
 const { addOffsetCounts, trackSent, markAsComplete } = require('./statusHandler');
 const { createScheduledPush } = require('./campaign');
-
-const flatten = (arr) => arr.reduce((a, b) => (
-  Array.isArray(b) ? a.concat(flatten(b))
-    : a.concat(b)
-), []);
+const { computeBucketValue } = require('./experiment');
+const { flatten } = require('./util');
 
 module.exports = {
   sendScheduledPushes(parseConfig, publisher, now) {
@@ -31,17 +28,27 @@ module.exports = {
   },
 
   processPushBatch({ offset, query, body, pushStatus }, parseConfig, pushAdapter, now) {
-    pushStatus = Parse.Object.fromJSON(Object.assign({ className: '_PushStatus' }, pushStatus));
-    return parseConfig.database.find('_Installation', query.where, query)
-      .then((installations) => pushAdapter.send(
-        { data: JSON.parse(body), where: query.where },
-        installations
-      ))
-      .then((pushResults) => trackSent(pushStatus, offset, pushResults, parseConfig.database, now));
+    return Promise.resolve(parseConfig.database.find('_Installation', query.where, query))
+      .filter((installation) => {
+        const { distribution } = pushStatus;
+        if (distribution) {
+          const { min, max, salt } = distribution;
+          const bucketValue = computeBucketValue(installation.id, salt);
+          return bucketValue >= min && bucketValue <= max;
+        }
+
+        return true;
+      })
+      .map((installation) => pushAdapter.send({
+        data: JSON.parse(body),
+        where: { objectId: installation.id },
+      }, [ installation ], pushStatus))
+      .then((pushResults) => trackSent(pushStatus.objectId, offset, flatten(pushResults), parseConfig.database, now));
   },
 
-  runPushCampaigns(parseConfig) {
+  runPushCampaigns(parseConfig, now) {
+    now = now || new Date();
     return Promise.resolve(getActiveCampaigns())
-      .each((campaign) => createScheduledPush(campaign, parseConfig.database));
+      .each((campaign) => createScheduledPush(campaign, parseConfig.database, now));
   },
 };

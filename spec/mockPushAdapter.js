@@ -6,9 +6,8 @@ module.exports = {
   adapter: {
     send(body, installations, pushStatus) {
       state.sent += installations.length;
-      return Promise.resolve(installations.map(() => {
-        return { transmitted: true };
-      }));
+      return Promise.resolve(
+        installations.map(() => ({ transmitted: true })));
     },
     getValidPushTypes() {
       return [ 'ios', 'android', 'gcm', 'fcm' ];

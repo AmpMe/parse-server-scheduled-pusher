@@ -26,8 +26,8 @@ module.exports = {
 
     let numSent = 0;
     let numFailed = 0;
-    for (const result of pushResults) {
-      if (result.transmitted) {
+    for (const { transmitted } of pushResults) {
+      if (transmitted) {
         numSent++;
       } else {
         numFailed++;
