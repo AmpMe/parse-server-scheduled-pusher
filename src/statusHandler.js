@@ -4,7 +4,7 @@ const { ABSOLUTE_TIME } = require('./schedule');
 
 module.exports = {
   markAsComplete(pushStatus, now) {
-    // TODO Assert now
+    // TODO assert now
 
     const ttl = now - 24 * 60 * 60 * 1000;
     // If push was supposed to be sent more than 24 hours ago.
