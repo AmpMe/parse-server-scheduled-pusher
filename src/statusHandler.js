@@ -31,8 +31,6 @@ module.exports = {
   },
 
   addOffsetCounts(pushStatus, offset) {
-    // WARNING: setting the initial counts for when the offset is defined (sentPerUTCOffset, failedPerUTCOffset),
-    // is not atomic. This method assumes that only one instance of the program is running.
     if (
       typeof offset === 'undefined' && // Everyone gets it at the same time.
       pushStatus.get('status') === 'scheduled'
