@@ -2,7 +2,6 @@ const moment = require('moment-timezone');
 const Parse = require('parse/node');
 
 const { offsetToTimezones } = require('./offsets');
-const { batchQuery } = require('./query');
 
 const SEND_TIME_VARIANCE = 60 * 5; // 5 minutes, 300 seconds
 
@@ -43,12 +42,12 @@ function getCurrentOffsets(offsets, pushTime, now) {
 function createPushWorkItems(pushStatus, now) {
   now = now || new Date();
 
-  const offsetToPwi = (offset) => {
+  const offsetToPwi = (UTCOffset) => {
     const installationsQ = Parse.Query.fromJSON('_Installation', {
       where: JSON.parse(pushStatus.get('query')),
     });
-    if (typeof offset !== 'undefined') {
-      const timezonesToSend = offsetToTimezones[offset];
+    if (typeof UTCOffset !== 'undefined') {
+      const timezonesToSend = offsetToTimezones[UTCOffset];
       installationsQ.containedIn('timeZone', timezonesToSend);
     }
 
@@ -56,7 +55,7 @@ function createPushWorkItems(pushStatus, now) {
       body: pushStatus.get('payload'),
       query: JSON.parse(JSON.stringify(installationsQ)),
       pushStatus,
-      offset,
+      UTCOffset,
     };
   };
 

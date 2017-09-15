@@ -14,7 +14,7 @@ module.exports = {
       .then(flatten)
 
       // We set the offsets to prevent resending in the next iteration
-      .map((pwi) => addOffsetCounts(pwi.pushStatus.id, pwi.offset, now)
+      .map((pwi) => addOffsetCounts(pwi.pushStatus, pwi.UTCOffset, now)
         .then(() => Promise.resolve(pwi)))
       .then(flatten)
 

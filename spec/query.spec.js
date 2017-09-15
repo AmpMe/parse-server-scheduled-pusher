@@ -1,14 +1,14 @@
 const { dropDB } = require('parse-server-test-runner');
 const Parse = require('parse/node');
 
-const { batchQuery, getActiveCampaigns, getScheduledPushes } = require('../src/query');
-const { createCampaign } = require('./util');
+const { getScheduledPushes } = require('../src/query');
 
 describe('getScheduledPushes', () => {
   beforeEach((done) => {
     dropDB().then(done, done.fail);
   });
 
+  // TODO add running + scheduled pushes
   it('should only pick scheduled pushes', (done) => {
     Promise.all([
       Parse.Push.send({
@@ -38,29 +38,5 @@ describe('getScheduledPushes', () => {
       })
       .then(done)
       .catch(done.fail);
-  });
-});
-
-describe('batchQuery', () => {
-  it('should produce paginated queries', () => {
-    const where = { createdAt: { $gt: { __type: 'Date', iso: '2017-06-21T14:23:00.000Z' } } };
-    const batchSize = 3;
-    const count = 10;
-    const batches = batchQuery(where, batchSize, count);
-
-    expect(batches).toBeDefined('Batches should be an array');
-    expect(batches.length).toBe(Math.ceil(count / batchSize), 'Incorrect number of batches');
-
-    const queryResultLength = batches.reduce((sum, item) => item.limit + sum, 0);
-    expect(queryResultLength).toEqual(3 * batches.length);
-  });
-});
-
-describe('getActiveCampaigns', () => {
-  it('should work', (done) => {
-    createCampaign()
-      .then(getActiveCampaigns)
-      .then(([ pushCampaign ]) => expect(pushCampaign).toBeDefined())
-      .then(done, done.fail);
   });
 });

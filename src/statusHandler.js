@@ -1,14 +1,14 @@
 const Parse = require('parse/node');
 
-const { ABSOLUTE_TIME } = require('./schedule');
-
 module.exports = {
   markAsComplete(pushStatus, now) {
-    // TODO assert now
+    if (!(now instanceof Date)) {
+      throw new Error('now must be defined');
+    }
 
     const ttl = now - 24 * 60 * 60 * 1000;
     // If push was supposed to be sent more than 24 hours ago.
-    if (+pushStatus.get('pushTime') < ttl) {
+    if (+new Date(pushStatus.get('pushTime')) < ttl) {
       const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset') || {};
       let sentSum = 0;
       for (const offset of Object.keys(sentPerUTCOffset)) {
@@ -24,33 +24,38 @@ module.exports = {
 
       const status = sentSum === 0 ? 'failed' : 'succeeded';
       pushStatus.set('status', status);
-      return pushStatus.save(null, { useMasterKey: true });
+      return pushStatus.save(null, { useMasterKey: true })
+        .then(() => true);
     }
     return Promise.resolve(false);
   },
 
-  addOffsetCounts(pushStatusId, offset, now) {
-    now = now || new Date();
-
-    const update = { updatedAt: now };
-    const increment = (key, amount) => update[key] = { __op: 'Increment', amount };
-
-    if (offset === ABSOLUTE_TIME) {
-      increment('count', 0);
-      increment('numSent', 0);
-      update['status'] = 'running';
-    } else {
-      increment(`sentPerUTCOffset.${offset}`, 0);
-      increment(`failedPerUTCOffset.${offset}`, 0);
+  addOffsetCounts(pushStatus, offset) {
+    // WARNING: setting the initial counts for when the offset is defined (sentPerUTCOffset, failedPerUTCOffset),
+    // is not atomic. This method assumes that only one instance of the program is running.
+    if (
+      typeof offset === 'undefined' && // Everyone gets it at the same time.
+      pushStatus.get('status') === 'scheduled'
+    ) {
+      pushStatus.set('status', 'running');
+      pushStatus.increment('count', 0);
+      pushStatus.increment('numSent', 0);
+      return pushStatus.save(null, { useMasterKey: true })
+        .then(() => ({ updated: true }));
+    } else if (typeof offset !== 'undefined') {
+        // Parse JS SDK doesn't allow nested increment.
+        // So we have to call the rest endpoint directly.
+        const update = { status: 'running' };
+        update[`sentPerUTCOffset.${offset}`] = { __op: 'Increment', amount: 0 };
+        update[`failedPerUTCOffset.${offset}`] = { __op: 'Increment', amount: 0 };
+        return Parse._request(
+          'PUT',
+          `classes/_PushStatus/${pushStatus.id}`,
+          update,
+          { useMasterKey: true }
+        ).then(() => ({ updated: true }));
     }
 
-    // Parse JS SDK doesn't allow nested increment.
-    // So we have to call the rest endpoint directly.
-    return Parse._request(
-      'PUT',
-      `classes/_PushStatus/${pushStatusId}`,
-      update,
-      { useMasterKey: true }
-    );
+    return Promise.resolve({ updated: false });
   },
 };

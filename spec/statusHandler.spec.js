@@ -1,32 +1,26 @@
+/* eslint-disable max-len */
 const Parse = require('parse/node');
-const Config = require('parse-server/lib/Config');
 const { dropDB } = require('parse-server-test-runner');
 
 const { getScheduledPushes } = require('../src/query');
-const { addOffsetCounts, markAsComplete, trackSent } = require('../src/statusHandler');
+const { addOffsetCounts, markAsComplete } = require('../src/statusHandler');
 
 const { stripTimezone } = require('./util');
 
 describe('statusHandler', () => {
-  function sendNotification(inLocalTime=true) {
-    const now = new Date('2017-07-20T12:20:40.730Z');
-    const pushTime = new Date(now);
-    pushTime.setHours(9);
-    pushTime.setMinutes(20);
-
-    const notification = {
-      push_time: inLocalTime ? stripTimezone(pushTime)
-        : pushTime.toISOString(),
-      where: { createdAt: { $gt: { __type: 'Date', iso: '2017-06-21T14:23:00.000Z' } } },
-      data: {
-        alert: 'Alert!!!!!',
-        uri: 'foo://bar?baz=qux',
-        url: 'foo://bar?baz=qux',
-        type: 'bar',
-      },
-    };
-
-    return Parse.Push.send(notification, { useMasterKey: true });
+  function send(pushTime, inLocalTime=true) {
+    const pushStatus = new Parse.Object('_PushStatus');
+    return pushStatus.save({
+      pushTime: inLocalTime ? stripTimezone(pushTime) : pushTime.toISOString(),
+      status: 'scheduled',
+      query: '{}',
+      payload: '{"alert":"alert!"}',
+      title: 'title',
+      expiry: +new Date(pushTime + 5000),
+      numSent: 0,
+      source: 'rest',
+      pushHash: '1328bee6e66a1c8f6fa5d5546812e671',
+    }, { useMasterKey: true });
   }
 
   beforeAll((done) => {
@@ -35,14 +29,14 @@ describe('statusHandler', () => {
 
   describe('addOffsetCounts', () => {
     it('should set the success/failure counts to 0 if not previously set', (done) => {
-      const config = new Config('test', '/1');
-      sendNotification()
+      const now = new Date('2017-07-20T12:20:40.730Z');
+      send(new Date(now + 5000))
         .then(getScheduledPushes)
         .then(([ pushStatus ]) => {
           expect(pushStatus.get('sentPerUTCOffset')).toBeUndefined();
           expect(pushStatus.get('failedPerUTCOffset')).toBeUndefined();
 
-          return addOffsetCounts(pushStatus.id, 180, config.database);
+          return addOffsetCounts(pushStatus, 180);
         })
         .then(getScheduledPushes)
         .then(([ pushStatus ]) => {
@@ -54,81 +48,43 @@ describe('statusHandler', () => {
     });
   });
 
-  describe('trackSent', () => {
-    it('should increment the counts', (done) => {
-      sendNotification()
-        .then(getScheduledPushes)
-        .then(([ pushStatus ]) => {
-          const config = new Config('test', '/1');
-          const results = [ { transmitted: true }, { transmitted: false }, { transmitted: true } ];
-          return trackSent(pushStatus, 180, results, config.database, new Date, true);
-        })
-        .then(getScheduledPushes)
-        .then(([ pushStatus ]) => {
-          expect(pushStatus.get('sentPerUTCOffset')['180']).toBe(2);
-          expect(pushStatus.get('failedPerUTCOffset')['180']).toBe(1);
-        })
-        .catch(done.fail)
-        .then(done);
-    }, 5 * 1000);
-  });
-
   describe('markAsComplete', () => {
     const longTimeAgo = new Date(0);
     const now = new Date('2017-07-20T12:20:40.730Z');
 
-    function fetch(objectId, database) {
-      return database.find('_PushStatus', { objectId }, { limit: 1 })
-        .then(([ pushStatus ]) => Parse.Object.fromJSON(Object.assign({ className: '_PushStatus' }, pushStatus)));
-    }
-
-    function send(objectId, pushTime, database) {
-      return database.create('_PushStatus', { pushTime, objectId }, {})
-        .then(() => fetch(objectId, database));
-    }
-
     it('should not mark recently scheduled PushStatus', (done) => {
-      const config = new Config('test', '/1');
-      const objectId = 'RImUFHUEtd';
-
-      send(objectId, now, config.database)
-        .then((pushStatus) => markAsComplete(pushStatus, config.database, now))
+      send(now)
+        .then((pushStatus) => markAsComplete(pushStatus, now))
         .then((result) => expect(result).toBe(false))
         .then(done, done.fail);
     });
 
     it('should mark failed Push', (done) => {
-      const config = new Config('test', '/1');
-      const objectId = '4VcMrkO432';
-
       let pushStatus;
-      send(objectId, longTimeAgo, config.database)
+      send(longTimeAgo)
         .then((p) => pushStatus = p)
-        .then(() => addOffsetCounts(objectId, 180, config.database, now))
-        .then(() => trackSent(pushStatus, 180, [ { transmitted: false } ], config.database, now))
-        .then(() => fetch(objectId, config.database))
-        .then((pushStatus) => markAsComplete(pushStatus, config.database, now))
-
+        .then(() => addOffsetCounts(pushStatus, 180))
+        .then(() => markAsComplete(pushStatus, now))
         .then((result) => expect(result).toBe(true))
-        .then(() => fetch(objectId, config.database))
+        .then(() => pushStatus.fetch({ useMasterKey: true }))
         .then((pushStatus) => expect(pushStatus.get('status')).toBe('failed'))
         .then(done, done.fail);
     });
 
     it('should mark successful Push', (done) => {
-      const config = new Config('test', '/1');
-      const objectId = '3DXht7WvuZ';
-
       let pushStatus;
-      send(objectId, longTimeAgo, config.database)
+      send(longTimeAgo)
         .then((p) => pushStatus = p)
-        .then(() => addOffsetCounts(objectId, 180, config.database, now))
-        .then(() => trackSent(pushStatus, 180, [ { transmitted: true } ], config.database, now))
-
-        .then(() => fetch(objectId, config.database))
-        .then((pushStatus) => markAsComplete(pushStatus, config.database, now))
+        .then(() => addOffsetCounts(pushStatus, 180))
+        .then(() => {
+          const sentPerUTCOffset = {};
+          sentPerUTCOffset[180] = 10;
+          return pushStatus.save({ sentPerUTCOffset }, { useMasterKey: true });
+        })
+        .then(() => pushStatus.fetch({ useMasterKey: true }))
+        .then((pushStatus) => markAsComplete(pushStatus, now))
         .then((result) => expect(result).toBe(true))
-        .then(() => fetch(objectId, config.database))
+        .then(() => pushStatus.fetch({ useMasterKey: true }))
         .then((pushStatus) => expect(pushStatus.get('status')).toBe('succeeded'))
         .then(done, done.fail);
     });

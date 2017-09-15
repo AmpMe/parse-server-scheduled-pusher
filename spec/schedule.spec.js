@@ -1,17 +1,15 @@
 /* eslint-disable max-len */
 const Parse = require('parse/node');
-const Config = require('parse-server/lib/Config');
 const { dropDB } = require('parse-server-test-runner');
 
 const {
   getCurrentOffsets,
   getUnsentOffsets,
   createPushWorkItems,
-  batchPushWorkItem,
 } = require('../src/schedule');
 const { getScheduledPushes } = require('../src/query');
 
-const { setupInstallations, stripTimezone } = require('./util');
+const { stripTimezone } = require('./util');
 
 describe('getUnsentOffsets', () => {
   const sentPerUTCOffset = {
@@ -146,12 +144,12 @@ describe('createPushWorkItems', () => {
         const [ pushStatus ] = scheduledPushes;
         const pushWorkItem = createPushWorkItems(pushStatus, now)[0];
 
-        const expectedKeys = [ 'body', 'query', 'pushStatus', 'offset' ];
+        const expectedKeys = [ 'body', 'query', 'pushStatus', 'UTCOffset' ];
         const actualKeys = Object.keys(pushWorkItem);
         expectedKeys.forEach((key) => expect(actualKeys).toContain(key, `PushWorkItem doesn't contain ${key}`));
 
-        expect(pushWorkItem.offset).toBeDefined();
-        expect(pushWorkItem.offset).toBe('180', 'current offset (180) is not included');
+        expect(pushWorkItem.UTCOffset).toBeDefined();
+        expect(pushWorkItem.UTCOffset).toBe('180', 'current offset (180) is not included');
 
         expect(pushWorkItem.query.where.timeZone).toBeDefined('Query should have timeZone constraint');
         expect(pushWorkItem.query.where.timeZone.$in).toBeDefined('Timezone should be a "containedIn" query');
@@ -159,29 +157,4 @@ describe('createPushWorkItems', () => {
       })
       .then(done).catch(done.fail);
   });
-});
-
-describe('batchPushWorkItem', () => {
-  it('should take one PushWorkItem and produce paginated PushWorkItems', (done) => {
-    const pwi = require('./fixtures/pushWorkItem.json');
-    const config = new Config('test', '/1');
-
-    return dropDB()
-      .then(setupInstallations)
-      .then(() => batchPushWorkItem(pwi, config, 3))
-      .then((batches) => {
-        expect(batches.length).toBeDefined('Batches should be an Array');
-        expect(batches.length).toEqual(5);
-
-        const sum = batches.reduce((acc, batch) => batch.query.limit + acc, 0);
-        expect(sum).toBe(15);
-
-        batches.forEach((batch) => {
-          expect(batch.applicationId).toEqual('test', 'Batch applicationId should match config');
-          expect(batch.query.limit).toEqual(3);
-        });
-      })
-      .then(done)
-      .catch(done.fail);
-  }, 5000 * 10);
 });
