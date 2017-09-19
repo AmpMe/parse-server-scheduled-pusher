@@ -24,7 +24,7 @@ describe('Sending scheduled pushes', () => {
       });
 
       Parse.Push.send({
-        push_time: stripTimezone(now),
+        push_time: stripTimezone(new Date(+now + 1)),
         data: {
           alert: 'Alert!!!!!',
           uri: 'foo://bar?baz=qux',
@@ -44,7 +44,7 @@ describe('Sending scheduled pushes', () => {
 
   describe('at a specific time', () => {
     it('should work', (done) => {
-      const now = new Date();
+      const now = new Date(Date.now() - 1);
 
       const pwiReceivePromise = new Promise((resolve, reject) => {
         subscriber.subscribe(channel);
@@ -64,7 +64,7 @@ describe('Sending scheduled pushes', () => {
         },
         where: {},
       }, { useMasterKey: true })
-        .then(() => sendScheduledPushes(publisher, channel, now))
+        .then(() => sendScheduledPushes(publisher, channel))
         .then(() => pwiReceivePromise)
         .then((pwi) => {
           expect(pwi).toBeDefined();

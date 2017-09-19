@@ -20,7 +20,7 @@
     "moment": "^2.18.1",
     "moment-timezone": "^0.5.13",
     "parse": "^1.10.0",
-    "time": "^0.12.0"
+    "parse-server-gcloud-pubsub": "parse-server-modules/parse-server-gcloud-pubsub#feature/disable-fan-out"
   },
   "devDependencies": {
     "eslint": "^4.5.0",

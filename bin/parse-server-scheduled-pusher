@@ -7,6 +7,11 @@ Parse.initialize(
   process.env.PARSE_JAVASCRIPT_KEY,
   process.env.PARSE_MASTER_KEY
 );
+Parse.serverURL = process.env.PARSE_URL;
+
+if (typeof process.env.PARSE_MESSAGE_QUEUE_ADAPTER !== 'string') {
+  throw new Error('PARSE_MESSAGE_QUEUE_ADAPTER must be defined');
+}
 
 const messageQueueAdapter = require(process.env.PARSE_MESSAGE_QUEUE_ADAPTER);
 if (typeof messageQueueAdapter.createPublisher !== 'function') {
@@ -19,5 +24,10 @@ if (typeof channel !== 'string') {
 }
 
 const publisher = messageQueueAdapter.createPublisher();
-sendScheduledPushes(publisher, channel);
+sendScheduledPushes(publisher, channel)
+  .then(() => {
+    setTimeout(() => {
+      process.exit(0);
+    }, 5000);
+  });
 // runPushCampaigns();

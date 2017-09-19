@@ -53,7 +53,7 @@ function createPushWorkItems(pushStatus, now) {
 
     return {
       body: pushStatus.get('payload'),
-      query: JSON.parse(JSON.stringify(installationsQ)),
+      query: installationsQ.toJSON(),
       pushStatus,
       UTCOffset,
     };
@@ -61,11 +61,16 @@ function createPushWorkItems(pushStatus, now) {
 
   let pushTime = pushStatus.get('pushTime');
   if (pushTimeHasTimezoneComponent(pushTime)) {
-     // The `count` implies that the push work item has already been created
-    if (pushStatus.get('status') === 'scheduled' && !pushStatus.get('count')) {
-      return [ offsetToPwi(undefined) ];
+    const ttl = Date.parse(pushTime) + (SEND_TIME_VARIANCE * 1000);
+    if (+now > +ttl) {
+      return [];
     }
-    return [];
+
+    if (pushStatus.get('status') !== 'scheduled') {
+      return [];
+    }
+
+    return [ offsetToPwi(undefined) ];
   }
 
   pushTime = new Date(pushTime);

@@ -8,8 +8,9 @@ const { flatten } = require('./util');
 module.exports = {
   sendScheduledPushes(publisher, channel, now = new Date()) {
     return Promise.resolve(getScheduledPushes())
-      // Pick only the incomplete pushes
-      .filter((pushStatus) => markAsComplete(pushStatus, now).then((res) => !res))
+      .filter((pushStatus) => markAsComplete(pushStatus, now)
+        // Pick only the incomplete pushes
+        .then((res) => res === false))
       .map((pwi) => createPushWorkItems(pwi, now))
       .then(flatten)
 
