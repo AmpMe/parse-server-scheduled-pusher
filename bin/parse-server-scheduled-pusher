@@ -2,8 +2,9 @@
 const Parse = require('parse/node');
 const { sendScheduledPushes } = require('../src');
 
+const appId = process.env.PARSE_APPLICATION_ID;
 Parse.initialize(
-  process.env.PARSE_APPLICATION_ID,
+  appId,
   process.env.PARSE_JAVASCRIPT_KEY,
   process.env.PARSE_MASTER_KEY
 );
@@ -24,10 +25,5 @@ if (typeof channel !== 'string') {
 }
 
 const publisher = messageQueueAdapter.createPublisher();
-sendScheduledPushes(publisher, channel)
-  .then(() => {
-    setTimeout(() => {
-      process.exit(0);
-    }, 5000);
-  });
+sendScheduledPushes(publisher, channel, appId);
 // runPushCampaigns();

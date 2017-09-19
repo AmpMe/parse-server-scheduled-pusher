@@ -39,20 +39,21 @@ function getCurrentOffsets(offsets, pushTime, now) {
 }
 
 // Generates a PushWorkItem for each offset
-function createPushWorkItems(pushStatus, now) {
+function createPushWorkItems(pushStatus, applicationId, now) {
   now = now || new Date();
 
   const offsetToPwi = (UTCOffset) => {
     const installationsQ = Parse.Query.fromJSON('_Installation', {
       where: JSON.parse(pushStatus.get('query')),
-    });
+});
     if (typeof UTCOffset !== 'undefined') {
       const timezonesToSend = offsetToTimezones[UTCOffset];
       installationsQ.containedIn('timeZone', timezonesToSend);
     }
 
     return {
-      body: pushStatus.get('payload'),
+      applicationId,
+      body: { data: JSON.parse(pushStatus.get('payload')) },
       query: installationsQ.toJSON(),
       pushStatus,
       UTCOffset,

@@ -142,9 +142,9 @@ describe('createPushWorkItems', () => {
         expect(scheduledPushes.length).toBe(1, 'There should be only 1 PushStatus');
 
         const [ pushStatus ] = scheduledPushes;
-        const pushWorkItem = createPushWorkItems(pushStatus, now)[0];
+        const pushWorkItem = createPushWorkItems(pushStatus, 'appId', now)[0];
 
-        const expectedKeys = [ 'body', 'query', 'pushStatus', 'UTCOffset' ];
+        const expectedKeys = [ 'body', 'query', 'pushStatus', 'UTCOffset', 'applicationId' ];
         const actualKeys = Object.keys(pushWorkItem);
         expectedKeys.forEach((key) => expect(actualKeys).toContain(key, `PushWorkItem doesn't contain ${key}`));
 

@@ -16,7 +16,6 @@ function compute() {
 }
 
 compute();
-setInterval(compute, process.env.OFFSET_COMPUTE_DELAY || 1000 * 60 * 60 * 4);
 
 module.exports = {
   offsetToTimezones,
