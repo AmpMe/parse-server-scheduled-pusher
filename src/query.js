@@ -1,6 +1,6 @@
 const Parse = require('parse/node');
 
-const { log } = require('./util');
+const { logger } = require('./util');
 
 function batchQuery(where, batchSize, count, order = 'createdAt') {
   const items = [];
@@ -35,11 +35,11 @@ function getScheduledPushes() {
 
   return pushStatusesQ.find({ useMasterKey: true })
     .then((pushStatuses) => {
-      log.info({ pushStatuses: pushStatuses.map((p) => p.toJSON()) }, 'Found scheduled pushes');
+      logger.info('Found scheduled pushes', { pushStatuses: pushStatuses.map((p) => p.toJSON()) });
       return pushStatuses.filter((pushStatus) => {
         // Filter out immediate pushes which are currently running
         if (pushStatus.get('status') === 'running' && !pushStatus.has('sentPerUTCOffset')) {
-          log.trace({ pushStatus: pushStatus.toJSON() }, 'Filtered out pushStatus');
+          logger.debug('Filtered out pushStatus', { pushStatus: pushStatus.toJSON() });
           return false;
         }
 

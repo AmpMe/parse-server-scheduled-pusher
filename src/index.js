@@ -3,7 +3,7 @@ const Promise = require('bluebird');
 const { getScheduledPushes, batchPushWorkItem } = require('./query');
 const { createPushWorkItems } = require('./schedule');
 const { addOffsetCounts, markAsComplete } = require('./statusHandler');
-const { flatten, log } = require('./util');
+const { flatten, logger } = require('./util');
 
 module.exports = {
   sendScheduledPushes(publisher, channel, applicationId, now = new Date()) {
@@ -12,13 +12,13 @@ module.exports = {
         // Pick only the incomplete pushes
         .then((res) => res === false))
       .tap((pushStatuses) => {
-        log.info({ pushStatuses: pushStatuses.map((p) => p.toJSON()) }, 'Incomplete pushes');
+        logger.info('Incomplete pushes', { pushStatuses: pushStatuses.map((p) => p.toJSON()) });
       })
 
       .map((pushStatus) => createPushWorkItems(pushStatus, applicationId, now))
       .then(flatten)
       .tap((pushWorkItems) => {
-        log.info({ pushWorkItems }, 'Generated pushwork items');
+        logger.info('Generated pushwork items', { pushWorkItems });
       })
 
       // We set the offsets to prevent resending in the next iteration

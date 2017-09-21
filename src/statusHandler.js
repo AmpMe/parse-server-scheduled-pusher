@@ -1,5 +1,5 @@
 const Parse = require('parse/node');
-const { log } = require('./util');
+const { logger } = require('./util');
 
 module.exports = {
   markAsComplete(pushStatus, now) {
@@ -8,7 +8,7 @@ module.exports = {
     }
 
     const ttl = now - 24 * 60 * 60 * 1000;
-    log.trace({ ttl }, 'Completion ttl');
+    logger.debug('Completion ttl', { ttl });
 
     // If push was supposed to be sent more than 24 hours ago.
     if (+new Date(pushStatus.get('pushTime')) < ttl) {
@@ -35,7 +35,7 @@ module.exports = {
   },
 
   addOffsetCounts(pushStatus, offset) {
-    log.info(Object.assign({ offset }, pushStatus.toJSON()), 'Initializing offset counts');
+    logger.info('Initializing offset counts', Object.assign({ offset }, pushStatus.toJSON()));
 
     if (
       typeof offset === 'undefined' && // Everyone gets it at the same time.

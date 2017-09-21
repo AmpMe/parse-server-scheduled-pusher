@@ -17,11 +17,11 @@
   },
   "dependencies": {
     "bluebird": "^3.5.0",
-    "bunyan": "^1.8.12",
     "moment": "^2.18.1",
     "moment-timezone": "^0.5.13",
     "parse": "^1.10.0",
-    "parse-server-gcloud-pubsub": "parse-server-modules/parse-server-gcloud-pubsub#feature/disable-fan-out"
+    "parse-server-gcloud-pubsub": "parse-server-modules/parse-server-gcloud-pubsub#feature/disable-fan-out",
+    "winston": "^2.3.1"
   },
   "devDependencies": {
     "eslint": "^4.5.0",
