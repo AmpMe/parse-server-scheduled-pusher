@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "bluebird": "^3.5.0",
+    "bunyan": "^1.8.12",
     "moment": "^2.18.1",
     "moment-timezone": "^0.5.13",
     "parse": "^1.10.0",

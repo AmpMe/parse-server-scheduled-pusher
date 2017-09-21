@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const Parse = require('parse/node');
 const { sendScheduledPushes } = require('../src');
+const { log } = require('../src/util');
 
 const appId = process.env.PARSE_APPLICATION_ID;
 Parse.initialize(
@@ -14,16 +15,23 @@ if (typeof process.env.PARSE_MESSAGE_QUEUE_ADAPTER !== 'string') {
   throw new Error('PARSE_MESSAGE_QUEUE_ADAPTER must be defined');
 }
 
+log.info({ messageQueueAdapter: process.env.PARSE_MESSAGE_QUEUE_ADAPTER });
 const messageQueueAdapter = require(process.env.PARSE_MESSAGE_QUEUE_ADAPTER);
 if (typeof messageQueueAdapter.createPublisher !== 'function') {
   throw new Error('Invalid adapter');
 }
 
 const channel = process.env.PARSE_PUSH_CHANNEL;
+log.info({ channel });
 if (typeof channel !== 'string') {
   throw new Error('Invalid channel');
 }
 
 const publisher = messageQueueAdapter.createPublisher();
-sendScheduledPushes(publisher, channel, appId);
+log.info('Created MQ publisher');
+
+sendScheduledPushes(publisher, channel, appId)
+  .then(() => {
+    log.info('Finished scheduling pushes');
+  });
 // runPushCampaigns();
