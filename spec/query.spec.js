@@ -11,7 +11,7 @@ describe('getScheduledPushes', () => {
   });
 
   // TODO add running + scheduled pushes
-  it('should only pick scheduled pushes', (done) => {
+  it('should filter out immediate pushes', (done) => {
     Promise.all([
       Parse.Push.send({
         where: { createdAt: { $gt: { __type: 'Date', iso: '2017-06-21T14:23:00.000Z' } } },

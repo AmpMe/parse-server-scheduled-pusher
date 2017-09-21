@@ -18,7 +18,7 @@ module.exports = {
       .map((pushStatus) => createPushWorkItems(pushStatus, applicationId, now))
       .then(flatten)
       .tap((pushWorkItems) => {
-        logger.info('Generated pushwork items', { pushWorkItems });
+        logger.info('Generated push work items', { pushWorkItems });
       })
 
       // We set the offsets to prevent resending in the next iteration
