@@ -35,7 +35,7 @@ function getScheduledPushes() {
 
   return pushStatusesQ.find({ useMasterKey: true })
     .then((pushStatuses) => {
-      logger.info('Found scheduled pushes', { pushStatuses: pushStatuses.map((p) => p.toJSON()) });
+      logger.info('Found potential pushes', { num: pushStatuses.length });
       return pushStatuses.filter((pushStatus) => {
         // Filter out immediate pushes which are currently running
         if (pushStatus.get('status') === 'running' && !pushStatus.has('sentPerUTCOffset')) {
