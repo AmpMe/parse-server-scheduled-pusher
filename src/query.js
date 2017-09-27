@@ -32,15 +32,50 @@ function batchPushWorkItem(pushWorkItem, batchSize = 100) {
 }
 
 function getScheduledPushes() {
+  const restGet = (q, count=false) => {
+    const { where, limit, skip } = q.toJSON();
+    const whereParam = `where=${encodeURIComponent(JSON.stringify(where))}`;
+
+    let readPreferenceParam = '';
+    if (process.env.DATABASE_READ_PREFERENCE) {
+      readPreferenceParam = `&readPreference=${encodeURIComponent(process.env.DATABASE_READ_PREFERENCE)}`;
+    }
+
+    let limitParam = '';
+    if (limit) {
+      limitParam = `&limit=${encodeURIComponent(limit)}`;
+    }
+    let skipParam = '';
+    if (skip) {
+      skipParam = `&skip=${encodeURIComponent(skip)}`;
+    }
+
+    let countParam = '';
+    if (count) {
+      limitParam = '&limit=0';
+      countParam = '&count=1';
+    }
+
+    return Promise.resolve(Parse._request(
+      'GET',
+      `classes/_PushStatus?${whereParam}${readPreferenceParam}${skipParam}${limitParam}${countParam}`,
+      {},
+      { useMasterKey: true }
+    ));
+  };
+
   const pushStatusesQ = new Parse.Query('_PushStatus');
   pushStatusesQ.containedIn('status', [ 'scheduled', 'running' ]);
 
-  return Promise.resolve(pushStatusesQ.count({ useMasterKey: true }))
-    .then((count) =>
+  return restGet(pushStatusesQ, true)
+    .then(({ count }) =>
       batchQuery(pushStatusesQ.toJSON().where, 1000, count)
         .map((batch) => Parse.Query.fromJSON('_PushStatus', batch)))
 
-    .mapSeries((query) => Promise.resolve(query.find({ useMasterKey: true }))
+    .mapSeries((q) => restGet(q)
+      .then(({ results }) => results)
+      .map((pushStatus) =>
+        Parse.Object.fromJSON(Object.assign({ className: '_PushStatus' }, pushStatus)))
       .filter((pushStatus) => {
         // Filter out immediate pushes which are currently running
         if (pushStatus.get('status') === 'running' && !pushStatus.has('sentPerUTCOffset')) {
