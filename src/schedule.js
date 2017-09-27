@@ -45,7 +45,7 @@ function createPushWorkItems(pushStatus, applicationId, now) {
   const offsetToPwi = (UTCOffset) => {
     const installationsQ = Parse.Query.fromJSON('_Installation', {
       where: JSON.parse(pushStatus.get('query')),
-});
+    });
     if (typeof UTCOffset !== 'undefined') {
       const timezonesToSend = offsetToTimezones[UTCOffset];
       installationsQ.containedIn('timeZone', timezonesToSend);
