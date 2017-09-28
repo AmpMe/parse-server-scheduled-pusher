@@ -33,8 +33,7 @@ function batchPushWorkItem(pushWorkItem, batchSize = 100) {
 
 function getScheduledPushes() {
   const pushStatusesQ = new Parse.Query('_PushStatus');
-  pushStatusesQ.containedIn('status', [ 'scheduled', 'running' ]);
-  pushStatusesQ.descending('updatedAt');
+  pushStatusesQ.containedIn('status', [ 'scheduled' ]);
 
   return Promise.resolve(pushStatusesQ.count({ useMasterKey: true }))
     .then((count) =>
