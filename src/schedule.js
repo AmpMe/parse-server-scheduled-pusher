@@ -43,11 +43,23 @@ function createPushWorkItems(pushStatus, applicationId, now) {
   now = now || new Date();
 
   const offsetToPwi = (UTCOffset) => {
-    const installationsQ = Parse.Query.fromJSON('_Installation', {
-      where: JSON.parse(pushStatus.get('query')),
-    });
+    const where = JSON.parse(pushStatus.get('query'));
+    const installationsQ = Parse.Query.fromJSON('_Installation', { where });
+
     if (typeof UTCOffset !== 'undefined') {
-      const timezonesToSend = offsetToTimezones[UTCOffset];
+      let requestedTimezones;
+      if (where && where.timeZone && !where.timeZone.$in) {
+        requestedTimezones = new Set([ where.timeZone ]);
+      } else if (where && where.timeZone && where.timeZone.$in) {
+        requestedTimezones = new Set(where.timeZone.$in);
+      }
+
+      let timezonesToSend = offsetToTimezones[UTCOffset];
+      if (requestedTimezones) {
+        // intersection
+        timezonesToSend = timezonesToSend.filter((t) => requestedTimezones.has(t));
+      }
+
       installationsQ.containedIn('timeZone', timezonesToSend);
     }
 

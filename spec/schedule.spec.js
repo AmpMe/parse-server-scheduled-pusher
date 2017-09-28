@@ -157,4 +157,55 @@ describe('createPushWorkItems', () => {
       })
       .then(done).catch(done.fail);
   });
+
+  it('should respect existing timezones constraint', (done) => {
+    const now = new Date('2017-07-20T12:20:40.730Z');
+    const pushTime = new Date(now);
+    pushTime.setHours(9);
+    pushTime.setMinutes(20);
+
+    const notificationA = {
+      push_time: stripTimezone(pushTime),
+      where: {
+        createdAt: { $gt: { __type: 'Date', iso: '2017-06-21T14:23:00.000Z' } },
+        timeZone: 'America/Halifax',
+      },
+      data: {
+        alert: 'Alert!!!!!',
+        uri: 'foo://bar?baz=qux',
+        url: 'foo://bar?baz=qux',
+        type: 'bar',
+      },
+    };
+
+    const notificationB = {
+      push_time: stripTimezone(pushTime),
+      where: {
+        createdAt: { $gt: { __type: 'Date', iso: '2017-06-21T14:23:00.000Z' } },
+        timeZone: {
+          $in: [ 'America/Halifax', 'America/Goose_Bay', 'America/Montreal' ],
+        },
+      },
+      data: {
+        alert: 'Alert!!!!!',
+        uri: 'foo://bar?baz=qux',
+        url: 'foo://bar?baz=qux',
+        type: 'bar',
+      },
+    };
+
+    Promise.all([
+      Parse.Push.send(notificationA, { useMasterKey: true }),
+      Parse.Push.send(notificationB, { useMasterKey: true }),
+    ])
+      .then(getScheduledPushes)
+      .then(([ a, b ]) => {
+        const [ pwiA ] = createPushWorkItems(a, 'appId', now);
+        const [ pwiB ] = createPushWorkItems(b, 'appId', now);
+
+        expect(pwiA.query.where.timeZone.$in).toEqual([ 'America/Halifax' ]);
+        expect(pwiB.query.where.timeZone.$in.sort()).toEqual([ 'America/Goose_Bay', 'America/Halifax' ]);
+      })
+      .then(done, done.fail);
+  });
 });
