@@ -41,7 +41,7 @@ module.exports = {
       typeof offset === 'undefined' && // Everyone gets it at the same time.
       pushStatus.get('status') === 'scheduled'
     ) {
-      pushStatus.set('status', 'running');
+      // pushStatus.set('status', 'running');
       pushStatus.increment('count', 0);
       pushStatus.increment('numSent', 0);
       return pushStatus.save(null, { useMasterKey: true })
@@ -49,7 +49,7 @@ module.exports = {
     } else if (typeof offset !== 'undefined') {
       // Parse JS SDK doesn't allow nested increment.
       // So we have to call the rest endpoint directly.
-      const update = { status: 'running' };
+      const update = { };
       update[`sentPerUTCOffset.${offset}`] = { __op: 'Increment', amount: 0 };
       update[`failedPerUTCOffset.${offset}`] = { __op: 'Increment', amount: 0 };
 
