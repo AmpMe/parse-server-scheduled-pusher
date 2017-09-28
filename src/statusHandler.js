@@ -41,7 +41,7 @@ module.exports = {
       typeof offset === 'undefined' && // Everyone gets it at the same time.
       pushStatus.get('status') === 'scheduled'
     ) {
-      pushStatus.set('status', 'running');
+      // pushStatus.set('status', 'running');
       pushStatus.increment('count', 0);
       pushStatus.increment('numSent', 0);
       return pushStatus.save(null, { useMasterKey: true })
