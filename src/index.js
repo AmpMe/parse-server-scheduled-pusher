@@ -1,6 +1,7 @@
 const Promise = require('bluebird');
 
-const { getScheduledPushes, batchPushWorkItem } = require('./query');
+const { scheduleNextPush } = require('./campaign');
+const { getScheduledPushes, getActiveCampaigns, batchPushWorkItem } = require('./query');
 const { createPushWorkItems } = require('./schedule');
 const { addOffsetCounts, markAsComplete } = require('./statusHandler');
 const { flatten, logger } = require('./util');
@@ -33,8 +34,14 @@ module.exports = {
       .map((pwi) => batchPushWorkItem(pwi, 30))
       .then(flatten)
       .each((pwi) => {
+        logger.info('Publishing push work items', pwi);
         const message = JSON.stringify(pwi);
         return publisher.publish(channel, message);
       });
+  },
+
+  runCampaigns(now = new Date()) {
+    return Promise.resolve(getActiveCampaigns())
+      .each((campaign) => scheduleNextPush(campaign, now));
   },
 };

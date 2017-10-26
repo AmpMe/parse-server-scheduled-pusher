@@ -3,8 +3,8 @@ const Parse = require('parse/node');
 const { setupInstallations } = require('./util');
 const { EventEmitterMQ } = require('parse-server/lib/Adapters/MessageQueue/EventEmitterMQ');
 
-const { sendScheduledPushes } = require('../src');
-const { stripTimezone } = require('./util');
+const { sendScheduledPushes, runCampaigns } = require('../src');
+const { stripTimezone, createCampaign } = require('./util');
 
 // Integration tests
 describe('Sending scheduled pushes', () => {
@@ -75,5 +75,14 @@ describe('Sending scheduled pushes', () => {
         })
         .then(done, done.fail);
     });
+  });
+});
+
+describe('Running PushCampaigns', () => {
+  it('should work', (done) => {
+    const now = new Date('2017-08-24T17:27:43.105Z');
+    createCampaign(now)
+      .then(() => runCampaigns(now))
+      .then(done, done.fail);
   });
 });

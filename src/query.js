@@ -25,10 +25,11 @@ function batchPushWorkItem(pushWorkItem, batchSize = 100) {
   });
 
   return installationsQ.count({ useMasterKey: true })
-    .then((count) => (
-      batchQuery(pushWorkItem.query.where, batchSize, count)
-        .map((batch) => Object.assign({}, pushWorkItem, { query: batch }))
-    ));
+    .then((count) => {
+      logger.info('Installations count', { count, pushWorkItem });
+      return batchQuery(pushWorkItem.query.where, batchSize, count)
+        .map((batch) => Object.assign({}, pushWorkItem, { query: batch }));
+    });
 }
 
 function getScheduledPushes() {
@@ -61,4 +62,17 @@ function getScheduledPushes() {
     });
 }
 
-module.exports = { getScheduledPushes, batchQuery, batchPushWorkItem };
+function getPushesByCampaign(campaign) {
+  const pushes = campaign.relation('pushes');
+  return pushes.query()
+    .descending('createdAt')
+    .find({ useMasterKey: true });
+}
+
+function getActiveCampaigns() {
+  const campaignsQ = new Parse.Query('PushCampaign');
+  return campaignsQ.equalTo('status', 'active')
+    .find({ useMasterKey: true });
+}
+
+module.exports = { getActiveCampaigns, getScheduledPushes, getPushesByCampaign, batchQuery, batchPushWorkItem };
