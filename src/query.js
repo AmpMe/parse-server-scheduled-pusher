@@ -70,6 +70,7 @@ function getPushesByCampaign(campaign) {
 }
 
 function getActiveCampaigns() {
+  logger.info('Finding active campaigns');
   const campaignsQ = new Parse.Query('PushCampaign');
   return campaignsQ.equalTo('status', 'active')
     .find({ useMasterKey: true });

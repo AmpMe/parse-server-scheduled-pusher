@@ -4,6 +4,7 @@ const moment = require('moment');
 const Parse = require('parse/node');
 
 const { getPushesByCampaign } = require('./query');
+const { logger } = require('./util');
 
 const md5Hash = (str) => crypto.createHash('md5').update(str).digest('hex');
 
@@ -63,11 +64,18 @@ function scheduleNextPush(pushCampaign, now) {
     dayOfMonth: pushCampaign.get('dayOfMonth'),
   }, now);
 
+  const campaignName = pushCampaign.get('name');
+  logger.info('Next push time', {
+    campaignName,
+    nextPushTime,
+  });
+
   return getPushesByCampaign(pushCampaign)
     .then((pushStatuses) => {
       // Bail out if the push for the next interval has already been scheduled
       for (const push of pushStatuses) {
         if (push.get('pushTime') === nextPushTime.toISOString()) {
+          logger.info('Push already scheduled', { campaignName, pushTime: push.get('pushTime') });
           return null;
         }
       }
@@ -84,7 +92,6 @@ function scheduleNextPush(pushCampaign, now) {
       }
 
       const pushStatus = new Parse.Object('_PushStatus');
-
       return pushStatus.save({
         pushTime: nextPushTime.toISOString(),
         query: pushCampaign.get('query'),
@@ -98,7 +105,13 @@ function scheduleNextPush(pushCampaign, now) {
           pushes.add(pushStatus);
           return pushCampaign.save(null, { useMasterKey: true });
         })
-        .then(() => pushStatus);
+        .then(() => {
+          logger.info('Scheduled next push', {
+            pushStatus: pushStatus.toJSON(),
+            campaignName,
+          });
+          return pushStatus;
+        });
   });
 }
 

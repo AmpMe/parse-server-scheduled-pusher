@@ -42,6 +42,7 @@ module.exports = {
 
   runCampaigns(now = new Date()) {
     return Promise.resolve(getActiveCampaigns())
+      .tap((activeCampaigns) => logger.info('Found active campaigns', { activeCampaigns }))
       .each((campaign) => scheduleNextPush(campaign, now));
   },
 };
