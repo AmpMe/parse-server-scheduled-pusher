@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const Parse = require('parse/node');
-const { sendScheduledPushes } = require('../src');
+const { runCampaigns, sendScheduledPushes } = require('../src');
 const { logger } = require('../src/util');
 
 const appId = process.env.PARSE_APPLICATION_ID;
@@ -32,6 +32,10 @@ logger.info('Created MQ publisher');
 
 sendScheduledPushes(publisher, channel, appId)
   .then(() => {
+    logger.info('Finished sending scheduled pushes');
+  });
+
+runCampaigns()
+  .then(() => {
     logger.info('Finished scheduling pushes');
   });
-// runPushCampaigns();
