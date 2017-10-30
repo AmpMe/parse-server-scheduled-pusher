@@ -56,13 +56,20 @@ function getNextPushTime({ interval, sendTime, dayOfWeek, dayOfMonth }, now) {
   }
 }
 
+function toLocalTime(date) {
+  const isoString = date.toISOString();
+  return isoString.substring(0, isoString.indexOf('Z'));
+}
+
 function scheduleNextPush(pushCampaign, now) {
-  const nextPushTime = getNextPushTime({
-    interval: pushCampaign.get('interval'),
-    sendTime: pushCampaign.get('sendTime'),
-    dayOfWeek: pushCampaign.get('dayOfWeek'),
-    dayOfMonth: pushCampaign.get('dayOfMonth'),
-  }, now);
+  const nextPushTime = toLocalTime(
+    getNextPushTime({
+      interval: pushCampaign.get('interval'),
+      sendTime: pushCampaign.get('sendTime'),
+      dayOfWeek: pushCampaign.get('dayOfWeek'),
+      dayOfMonth: pushCampaign.get('dayOfMonth'),
+    }, now)
+  );
 
   const campaignName = pushCampaign.get('name');
   logger.info('Next push time', {
@@ -74,7 +81,7 @@ function scheduleNextPush(pushCampaign, now) {
     .then((pushStatuses) => {
       // Bail out if the push for the next interval has already been scheduled
       for (const push of pushStatuses) {
-        if (push.get('pushTime') === nextPushTime.toISOString()) {
+        if (push.get('pushTime') === nextPushTime) {
           logger.info('Push already scheduled', { campaignName, pushTime: push.get('pushTime') });
           return null;
         }
@@ -93,7 +100,7 @@ function scheduleNextPush(pushCampaign, now) {
 
       const pushStatus = new Parse.Object('_PushStatus');
       return pushStatus.save({
-        pushTime: nextPushTime.toISOString(),
+        pushTime: nextPushTime,
         query: pushCampaign.get('query'),
         payload,
         source: 'parse-server-scheduled-pusher',

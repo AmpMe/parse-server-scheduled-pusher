@@ -160,7 +160,7 @@ describe('scheduleNextPush', () => {
         delete pushStatus.updatedAt;
 
         expect(pushStatus).toEqual({
-          pushTime: '2017-08-10T23:00:00.000Z',
+          pushTime: '2017-08-10T23:00:00.000',
           // eslint-disable-next-line max-len
           query: '{"user":{"__type":"Pointer","className":"_User","objectId":"0K1kfQnyj6"}}',
           // eslint-disable-next-line max-len

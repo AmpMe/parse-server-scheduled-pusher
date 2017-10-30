@@ -109,7 +109,7 @@ describe('getCurrentOffsets', () => {
       threeMinutesAgo.setMinutes(now.getMinutes() - 3);
       threeMinutesAgo.setSeconds(22);
       expect(getCurrentOffsets(allOffsets, threeMinutesAgo, now))
-        .toEqual([ '0' ]);
+        .toEqual([ '0', '60' ]);
     });
   });
 });
