@@ -42,9 +42,7 @@ function getNextPushTime({ interval, sendTime, dayOfWeek, dayOfMonth }, now) {
         pushTime.setUTCDate(date);
       }
 
-      if (now.getUTCDay() < dayOfWeek) {
-        thisWeek();
-      } else if (now.getUTCDay() === dayOfWeek && +now < +pushTime) {
+      if (now.getUTCDay() <= dayOfWeek) {
         thisWeek();
       } else { // too late for today
         nextWeek();
