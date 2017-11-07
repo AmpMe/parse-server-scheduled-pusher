@@ -6,6 +6,7 @@ const { getActiveCampaigns, getPushesByCampaign } = require('../src/query');
 const { createCampaign } = require('./util');
 
 describe('getNextPushTime', () => {
+  // Thursday, August 10
   const now = new Date('2017-08-10T19:18:07.309Z');
 
   describe('Monthly', () => {
