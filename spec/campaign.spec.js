@@ -85,15 +85,16 @@ describe('getNextPushTime', () => {
       });
     });
 
-    describe('Too late for today', () => {
-      it('should return a time in the next week', () => {
+    describe('Too late for today in UTC', () => {
+      it('should still return the time for today', () => {
+        const now = '2017-08-10T23:30:00.000Z';
         const nextPushTime = getNextPushTime({
           interval: 'weekly',
-          sendTime: '19:10:00',
+          sendTime: '19:30:00',
           dayOfWeek: 4,
         }, now);
 
-        expect(nextPushTime.toISOString()).toEqual('2017-08-17T19:10:00.000Z');
+        expect(nextPushTime.toISOString()).toEqual('2017-08-10T19:30:00.000Z');
       });
     });
 

@@ -9,9 +9,12 @@ const { logger } = require('./util');
 const md5Hash = (str) => crypto.createHash('md5').update(str).digest('hex');
 
 function getNextPushTime({ interval, sendTime, dayOfWeek, dayOfMonth }, now) {
-  const parsedSendTime = moment(sendTime, 'hh:mm:ss').toDate();
-  const pushTime = new Date(now);
+  // Assuming `now` is in UTC. Set `now` to the earliest possible time (- 12 hrs)
+  now = new Date(now.valueOf() - 12 * 60 * 60 * 1000);
 
+  const parsedSendTime = moment(sendTime, 'hh:mm:ss').toDate();
+
+  const pushTime = new Date(now);
   pushTime.setUTCHours(parsedSendTime.getUTCHours());
   pushTime.setUTCMinutes(parsedSendTime.getUTCMinutes());
   pushTime.setUTCSeconds(parsedSendTime.getUTCSeconds());
