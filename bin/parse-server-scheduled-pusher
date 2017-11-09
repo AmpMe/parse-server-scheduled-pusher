@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+const EventEmitter = require('events');
+
 const Parse = require('parse/node');
 const { runCampaigns, sendScheduledPushes } = require('../src');
 const { logger } = require('../src/util');
@@ -30,18 +32,29 @@ if (typeof channel !== 'string') {
 const publisher = messageQueueAdapter.createPublisher();
 logger.debug('Created MQ publisher');
 
-sendScheduledPushes(publisher, channel, appId)
-  .then((pushWorkItems) => {
-    logger.debug('Finished sending scheduled pushes', { pushWorkItems });
-  })
-  .catch((err) => {
-    logger.error(err.message, { stack: err.stack, name: err.name });
-  });
 
-runCampaigns()
-  .then(() => {
-    logger.debug('Finished scheduling push campaigns');
-  })
-  .catch((err) => {
-    logger.error(err.message, { stack: err.stack, name: err.name });
-  });
+function run(emitter = new EventEmitter()) {
+  sendScheduledPushes(publisher, channel, appId)
+    .then((pushWorkItems) => {
+      emitter.emit('sent-scheduled-pushes', { pushWorkItems });
+      logger.debug('Finished sending scheduled pushes', { pushWorkItems });
+    })
+    .catch((err) => {
+      logger.error(err.message, { stack: err.stack, name: err.name });
+    });
+
+  runCampaigns()
+    .then((pushStatuses) => {
+      emitter.emit('scheduled-push-campaigns', { pushStatuses });
+      logger.debug('Finished scheduling push campaigns');
+    })
+    .catch((err) => {
+      logger.error(err.message, { stack: err.stack, name: err.name });
+    });
+}
+
+if (!module.parent) { // MAIN
+  run();
+}
+
+module.exports = { run };

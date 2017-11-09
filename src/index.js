@@ -45,13 +45,13 @@ module.exports = {
         logger.info('Publishing push work items', pwi);
         const message = JSON.stringify(pwi);
         return publisher.publish(channel, message)
-          .then(() => ({ channel, message }));
+          .then(() => Promise.resolve({ channel, message }));
       });
   },
 
   runCampaigns(now = new Date()) {
     return Promise.resolve(getActiveCampaigns())
       .tap((activeCampaigns) => logger.info(`Found ${activeCampaigns.length} active campaigns`, { activeCampaigns }))
-      .each((campaign) => scheduleNextPush(campaign, now));
+      .map((campaign) => scheduleNextPush(campaign, now));
   },
 };
