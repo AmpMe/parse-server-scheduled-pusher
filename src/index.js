@@ -31,7 +31,13 @@ module.exports = {
         pwi.pushStatus = { objectId: pwi.pushStatus.id };
       })
 
-      .map((pwi) => batchPushWorkItem(pwi, 30))
+      .map((pwi) =>
+        batchPushWorkItem(pwi, 30)
+          .catch((exception) => {
+            logger.error('Error while batching push work items', { exception, pushWorkItem: pwi } );
+            return [];
+          })
+      )
       .then(flatten)
       .each((pwi) => {
         logger.info('Publishing push work items', pwi);

@@ -33,9 +33,15 @@ logger.info('Created MQ publisher');
 sendScheduledPushes(publisher, channel, appId)
   .then(() => {
     logger.info('Finished sending scheduled pushes');
+  })
+  .catch((err) => {
+    logger.error(err.message, { stack: err.stack, name: err.name });
   });
 
 runCampaigns()
   .then(() => {
     logger.info('Finished scheduling pushes');
+  })
+  .catch((err) => {
+    logger.error(err.message, { stack: err.stack, name: err.name });
   });

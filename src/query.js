@@ -76,4 +76,10 @@ function getActiveCampaigns() {
     .find({ useMasterKey: true });
 }
 
-module.exports = { getActiveCampaigns, getScheduledPushes, getPushesByCampaign, batchQuery, batchPushWorkItem };
+module.exports = {
+  getActiveCampaigns,
+  getScheduledPushes,
+  getPushesByCampaign,
+  batchQuery,
+  batchPushWorkItem
+};
