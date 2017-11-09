@@ -57,7 +57,7 @@ function getScheduledPushes() {
     ))
     .then(flatten)
     .tap((pushStatuses) => {
-      logger.info('Found ${pushStatuses.length} potential pushes', {
+      logger.info(`Found ${pushStatuses.length} potential pushes`, {
         pushStatuses: pushStatuses.map((p) => p.toJSON()),
       });
     });
