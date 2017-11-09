@@ -35,7 +35,7 @@ module.exports = {
   },
 
   addOffsetCounts(pushStatus, offset) {
-    logger.info('Initializing offset counts', Object.assign({ offset }, pushStatus.toJSON()));
+    logger.debug('Initializing offset counts', Object.assign({ offset }, pushStatus.toJSON()));
 
     if (
       typeof offset === 'undefined' && // Everyone gets it at the same time.

@@ -15,24 +15,24 @@ if (typeof process.env.PARSE_MESSAGE_QUEUE_ADAPTER !== 'string') {
   throw new Error('PARSE_MESSAGE_QUEUE_ADAPTER must be defined');
 }
 
-logger.info({ messageQueueAdapter: process.env.PARSE_MESSAGE_QUEUE_ADAPTER });
+logger.debug({ messageQueueAdapter: process.env.PARSE_MESSAGE_QUEUE_ADAPTER });
 const messageQueueAdapter = require(process.env.PARSE_MESSAGE_QUEUE_ADAPTER);
 if (typeof messageQueueAdapter.createPublisher !== 'function') {
   throw new Error('Invalid adapter');
 }
 
 const channel = process.env.PARSE_PUSH_CHANNEL;
-logger.info({ channel });
+logger.debug({ channel });
 if (typeof channel !== 'string') {
   throw new Error('Invalid channel');
 }
 
 const publisher = messageQueueAdapter.createPublisher();
-logger.info('Created MQ publisher');
+logger.debug('Created MQ publisher');
 
 sendScheduledPushes(publisher, channel, appId)
-  .then(() => {
-    logger.info('Finished sending scheduled pushes');
+  .then((pushWorkItems) => {
+    logger.debug('Finished sending scheduled pushes', { pushWorkItems });
   })
   .catch((err) => {
     logger.error(err.message, { stack: err.stack, name: err.name });
@@ -40,7 +40,7 @@ sendScheduledPushes(publisher, channel, appId)
 
 runCampaigns()
   .then(() => {
-    logger.info('Finished scheduling pushes');
+    logger.debug('Finished scheduling push campaigns');
   })
   .catch((err) => {
     logger.error(err.message, { stack: err.stack, name: err.name });

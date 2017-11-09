@@ -58,7 +58,9 @@ function getScheduledPushes() {
     .then(flatten)
 
     .tap((pushStatuses) => {
-      logger.info('Found potential pushes', { pushStatuses: pushStatuses.map((p) => p.toJSON()) });
+      if (pushStatuses && pushStatuses.length > 0) {
+        logger.info('Found potential pushes', { pushStatuses: pushStatuses.map((p) => p.toJSON()) });
+      }
     });
 }
 
@@ -81,5 +83,5 @@ module.exports = {
   getScheduledPushes,
   getPushesByCampaign,
   batchQuery,
-  batchPushWorkItem
+  batchPushWorkItem,
 };

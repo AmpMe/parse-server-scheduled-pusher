@@ -13,13 +13,15 @@ module.exports = {
         // Pick only the incomplete pushes
         .then((res) => res === false))
       .tap((pushStatuses) => {
-        logger.info('Incomplete pushes', { pushStatuses: pushStatuses.map((p) => p.toJSON()) });
+        logger.debug('Incomplete pushes', { pushStatuses: pushStatuses.map((p) => p.toJSON()) });
       })
 
       .map((pushStatus) => createPushWorkItems(pushStatus, applicationId, now))
       .then(flatten)
       .tap((pushWorkItems) => {
-        logger.info('Generated push work items', { pushWorkItems });
+        if (pushWorkItems && pushWorkItems.length > 0) {
+          logger.debug('Generated push work items', { pushWorkItems });
+        }
       })
 
       // We set the offsets to prevent resending in the next iteration
@@ -39,10 +41,11 @@ module.exports = {
           })
       )
       .then(flatten)
-      .each((pwi) => {
+      .map((pwi) => {
         logger.info('Publishing push work items', pwi);
         const message = JSON.stringify(pwi);
-        return publisher.publish(channel, message);
+        return publisher.publish(channel, message)
+          .then(() => ({ channel, message }));
       });
   },
 

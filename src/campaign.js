@@ -73,7 +73,7 @@ function scheduleNextPush(pushCampaign, now) {
   );
 
   const campaignName = pushCampaign.get('name');
-  logger.info('Next push time', {
+  logger.debug('Next push time', {
     campaignName,
     nextPushTime,
   });
@@ -83,7 +83,7 @@ function scheduleNextPush(pushCampaign, now) {
       // Bail out if the push for the next interval has already been scheduled
       for (const push of pushStatuses) {
         if (push.get('pushTime') === nextPushTime) {
-          logger.info('Push already scheduled', { campaignName, pushTime: push.get('pushTime') });
+          logger.debug('Push already scheduled', { campaignName, pushTime: push.get('pushTime') });
           return null;
         }
       }
