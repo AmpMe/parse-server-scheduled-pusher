@@ -51,7 +51,7 @@ module.exports = {
 
   runCampaigns(now = new Date()) {
     return Promise.resolve(getActiveCampaigns())
-      .tap((activeCampaigns) => logger.info('Found active campaigns', { activeCampaigns }))
+      .tap((activeCampaigns) => logger.info(`Found ${activeCampaigns.length} active campaigns`, { activeCampaigns }))
       .each((campaign) => scheduleNextPush(campaign, now));
   },
 };

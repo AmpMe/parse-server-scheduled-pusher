@@ -56,11 +56,10 @@ function getScheduledPushes() {
       }
     ))
     .then(flatten)
-
     .tap((pushStatuses) => {
-      if (pushStatuses && pushStatuses.length > 0) {
-        logger.info('Found potential pushes', { pushStatuses: pushStatuses.map((p) => p.toJSON()) });
-      }
+      logger.info('Found ${pushStatuses.length} potential pushes', {
+        pushStatuses: pushStatuses.map((p) => p.toJSON()),
+      });
     });
 }
 
@@ -72,7 +71,7 @@ function getPushesByCampaign(campaign) {
 }
 
 function getActiveCampaigns() {
-  logger.info('Finding active campaigns');
+  logger.debug('Finding active campaigns');
   const campaignsQ = new Parse.Query('PushCampaign');
   return campaignsQ.equalTo('status', 'active')
     .find({ useMasterKey: true });
