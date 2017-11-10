@@ -44,8 +44,8 @@ module.exports = {
       .map((pwi) => {
         logger.info('Publishing push work items', pwi);
         const message = JSON.stringify(pwi);
-        return publisher.publish(channel, message)
-          .then(() => Promise.resolve({ channel, message }));
+        publisher.publish(channel, message);
+        return { channel, message };
       });
   },
 
