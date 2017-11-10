@@ -87,7 +87,7 @@ describe('getNextPushTime', () => {
 
     describe('Too late for today in UTC', () => {
       it('should still return the time for today', () => {
-        const now = '2017-08-10T23:30:00.000Z';
+        const now = new Date('2017-08-10T23:30:00.000Z');
         const nextPushTime = getNextPushTime({
           interval: 'weekly',
           sendTime: '19:30:00',
