@@ -3,8 +3,8 @@ const moment = require('moment-timezone');
 const offsetToTimezones = {};
 const timezoneToOffset = {};
 
-function compute() {
-  const now = +new Date();
+function compute(now = new Date()) {
+  now = +now;
   const timezones = moment.tz.names();
 
   for (const zone of timezones) {
@@ -18,6 +18,7 @@ function compute() {
 compute();
 
 module.exports = {
+  compute,
   offsetToTimezones,
   timezoneToOffset,
 };
