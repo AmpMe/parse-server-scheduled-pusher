@@ -5,6 +5,8 @@ const flatten = (arr) => arr.reduce((a, b) => (
     : a.concat(b)
 ), []);
 
+winston.level = process.env.LOG_LEVEL || 'info';
+
 const logger = new winston.Logger({
   transports: [
     new winston.transports.Console({
