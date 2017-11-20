@@ -6,6 +6,8 @@ const { createPushWorkItems } = require('./schedule');
 const { addOffsetCounts, markAsComplete } = require('./statusHandler');
 const { flatten, logger } = require('./util');
 
+const BATCH_SIZE = parseInt(process.env.BATCH_SIZE) || 300;
+
 module.exports = {
   sendScheduledPushes(publisher, channel, applicationId, now = new Date()) {
     return Promise.resolve(getScheduledPushes())
@@ -34,15 +36,22 @@ module.exports = {
       })
 
       .map((pwi) =>
-        batchPushWorkItem(pwi, 30)
+        batchPushWorkItem(pwi, BATCH_SIZE)
           .catch((exception) => {
             logger.error('Error while batching push work items', { exception, pushWorkItem: pwi } );
             return [];
           })
       )
       .then(flatten)
+      .tap((pushWorkItemBatches) => {
+        const first = pushWorkItemBatches[0];
+        logger.info('Batched push work items', {
+          first,
+          batchSize: first.length,
+          totalBatches: pushWorkItemBatches.length,
+        });
+      })
       .map((pwi) => {
-        logger.info('Publishing push work items', pwi);
         const message = JSON.stringify(pwi);
         publisher.publish(channel, message);
         return { channel, message };
