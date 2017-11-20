@@ -47,7 +47,7 @@ module.exports = {
         const first = pushWorkItemBatches[0];
         logger.info('Batched push work items', {
           first,
-          batchSize: first.length,
+          expectedBatchSize: BATCH_SIZE,
           totalBatches: pushWorkItemBatches.length,
         });
       })

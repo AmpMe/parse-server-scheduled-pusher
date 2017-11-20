@@ -32,7 +32,6 @@ if (typeof channel !== 'string') {
 const publisher = messageQueueAdapter.createPublisher();
 logger.debug('Created MQ publisher');
 
-
 function run(emitter = new EventEmitter()) {
   sendScheduledPushes(publisher, channel, appId)
     .then((pushWorkItems) => {
