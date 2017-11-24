@@ -45,6 +45,10 @@ function getObjectIds(where, batchSize, firstElement) {
 function smartBatch(where, batchSize, firstElement, objects = []) {
   return getObjectIds(where, batchSize, firstElement).then((results) => {
     objects.push(results.map((res) => res.id));
+    if (results.length === 0) {
+      console.log('No results found...'); // eslint-disable-line
+      return;
+    }
     const last = results[results.length-1].id;
     console.log('Done: '+ results.length + ' ' +  last); // eslint-disable-line
     if (results.length === batchSize) {
