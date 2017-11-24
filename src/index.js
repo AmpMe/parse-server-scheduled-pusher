@@ -45,6 +45,9 @@ module.exports = {
       .then(flatten)
       .tap((pushWorkItemBatches) => {
         const first = pushWorkItemBatches[0];
+        if (!first) {
+          return;
+        }
         logger.info('Batched push work items', {
           first,
           expectedBatchSize: BATCH_SIZE,

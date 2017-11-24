@@ -19,17 +19,56 @@ function batchQuery(where, batchSize, count, order = 'objectId') {
   return items;
 }
 
-function batchPushWorkItem(pushWorkItem, batchSize = 100) {
-  const installationsQ = Parse.Query.fromJSON('_Installation', {
-    where: pushWorkItem.query.where,
-  });
+function sliceArray(array, size) {
+  const results = [];
+  while (array.length > 0) {
+    results.push(array.slice(0, size));
+    array = array.slice(size);
+  }
+  return results;
+}
 
-  return installationsQ.count({ useMasterKey: true })
-    .then((count) => {
-      logger.info('Installations count', { count, pushWorkItem });
-      return batchQuery(pushWorkItem.query.where, batchSize, count)
-        .map((batch) => Object.assign({}, pushWorkItem, { query: batch }));
+function getObjectIds(where, batchSize, firstElement) {
+  const installationsQ = Parse.Query.fromJSON('_Installation', {
+    where,
+  });
+  installationsQ.exists('deviceToken');
+  installationsQ.limit(batchSize);
+  installationsQ.select([ 'objectId' ]);
+  installationsQ.ascending('objectId');
+  if (firstElement) {
+    installationsQ.greaterThan('objectId', firstElement);
+  }
+  return installationsQ.find({ useMasterKey: true });
+}
+
+function smartBatch(where, batchSize, firstElement, objects = []) {
+  return getObjectIds(where, batchSize, firstElement).then((results) => {
+    objects.push(results.map((res) => res.id));
+    const last = results[results.length-1].id;
+    console.log('Done: '+ results.length + ' ' +  last); // eslint-disable-line
+    if (results.length === batchSize) {
+      return smartBatch(where, batchSize, last, objects);
+    }
+  }).then(() => {
+    if (objects.length > 0) {
+      logger.info(`Creating about ${objects.length * batchSize}`);
+    }
+    return objects.reduce((memo, array) => {
+      return memo.concat(sliceArray(array, 100));
+    }, []);
+  });
+}
+
+function batchPushWorkItem(pushWorkItem, batchSize = 100, querySize = 10000) {
+  return smartBatch(pushWorkItem.query.where, querySize).then((slices) => {
+    return slices.reduce((memo, array) => {
+      return memo.concat(sliceArray(array, batchSize));
+    }, []).map((slice) => {
+      const batch = { objectId: { $in: slice } };
+      return Object.assign({}, pushWorkItem, { query: batch });
     });
+  });
 }
 
 function getScheduledPushes() {
@@ -83,4 +122,5 @@ module.exports = {
   getPushesByCampaign,
   batchQuery,
   batchPushWorkItem,
+  smartBatch,
 };
