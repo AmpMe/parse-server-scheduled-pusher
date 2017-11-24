@@ -49,9 +49,9 @@ module.exports = {
           return;
         }
         logger.info('Batched push work items', {
-          first,
           expectedBatchSize: BATCH_SIZE,
           totalBatches: pushWorkItemBatches.length,
+          pushWorkItems: pushWorkItemBatches,
         });
       })
       .map((pwi) => {
