@@ -38,7 +38,7 @@ module.exports = {
       .map((pwi) =>
         batchPushWorkItem(pwi, BATCH_SIZE)
           .catch((exception) => {
-            logger.error('Error while batching push work items', { exception, pushWorkItem: pwi } );
+            logger.error('Error while batching push work items', { exception: JSON.stringify(exception), pushWorkItem: pwi } );
             return [];
           })
       )
