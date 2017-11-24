@@ -66,7 +66,7 @@ function batchPushWorkItem(pushWorkItem, batchSize = 100, querySize = 10000) {
       return memo.concat(sliceArray(array, batchSize));
     }, []).map((slice) => {
       const batch = { objectId: { $in: slice } };
-      return Object.assign({}, pushWorkItem, { query: batch });
+      return Object.assign({}, pushWorkItem, { query: { where: batch } });
     });
   });
 }
