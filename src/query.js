@@ -2,7 +2,7 @@ const Parse = require('parse/node');
 const Promise = require('bluebird');
 const { flatten, logger } = require('./util');
 
-function batchQuery(where, batchSize, count, order = 'createdAt') {
+function batchQuery(where, batchSize, count) {
   const items = [];
   for (let skip = 0; skip < count; skip += batchSize) {
     if (skip > count) {
@@ -13,7 +13,6 @@ function batchQuery(where, batchSize, count, order = 'createdAt') {
       where,
       limit: batchSize,
       skip,
-      order,
     });
   }
   return items;
