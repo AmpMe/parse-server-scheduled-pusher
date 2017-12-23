@@ -15,7 +15,9 @@ function compute(now = new Date()) {
   }
 }
 
-compute();
+if (!process.env.TESTING) {
+  compute();
+}
 
 module.exports = {
   compute,
