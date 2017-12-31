@@ -11,13 +11,14 @@ describe('Sending scheduled pushes', () => {
   beforeEach(setupInstallations);
 
   const channel = 'my-channel';
-  const publisher = EventEmitterMQ.createPublisher();
-  const subscriber = EventEmitterMQ.createSubscriber();
 
   describe('in local time', () => {
     it('should work', (done) => {
       const now = new Date('2017-08-24T17:27:43.105Z');
       const pushTime = new Date('2017-08-24T14:27:43.105Z');
+
+      const subscriber = EventEmitterMQ.createSubscriber();
+      const publisher = EventEmitterMQ.createPublisher();
 
       const pwiReceivePromise = new Promise((resolve, reject) => {
         subscriber.subscribe(channel);
@@ -49,11 +50,15 @@ describe('Sending scheduled pushes', () => {
   describe('at a specific time', () => {
     it('should work', (done) => {
       const now = new Date('2017-08-24T17:27:43.105Z');
+      const subscriber = EventEmitterMQ.createSubscriber();
+      const publisher = EventEmitterMQ.createPublisher();
 
+      const pushWorkItems = [];
       const pwiReceivePromise = new Promise((resolve, reject) => {
         subscriber.subscribe(channel);
         subscriber.on('message', (channel, rawMsg) => {
           const pwi = JSON.parse(rawMsg);
+          pushWorkItems.push(pwi);
           resolve(pwi);
         });
       });
@@ -71,7 +76,15 @@ describe('Sending scheduled pushes', () => {
         .then(() => sendScheduledPushes(publisher, channel, 'my-application-id', now))
         .then(() => pwiReceivePromise)
         .then((pwi) => {
+          expect(pushWorkItems.length).toBe(1);
           expect(pwi).toBeDefined();
+        })
+
+        // It shouldn't re-send
+        .then(() => sendScheduledPushes(publisher, channel, 'my-application-id', now))
+        .then(() => Promise.delay(100))
+        .then(() => {
+          expect(pushWorkItems.length).toBe(1, 'Scheduled push should only be sent once');
         })
         .then(done, done.fail);
     });
