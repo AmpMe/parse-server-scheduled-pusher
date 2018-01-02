@@ -121,7 +121,7 @@ function scheduleNextPush(pushCampaign, now) {
         .then(() => {
           const pushes = pushCampaign.relation('pushes');
           pushes.add(pushStatus);
-          return pushCampaign.save('nextPush', pushStatus, { useMasterKey: true });
+          return pushCampaign.save({ nextPush: pushStatus }, { useMasterKey: true });
         })
         .then(() => {
           logger.info('Scheduled next push', {
