@@ -78,11 +78,21 @@ function scheduleNextPush(pushCampaign, now) {
     nextPushTime,
   });
 
+  const nextPush = pushCampaign.get('nextPush');
+  if (nextPush &&
+      nextPush.get('pushTime') === nextPushTime &&
+      nextPush.get('status') === 'scheduled'
+  ) {
+      logger.debug('Push already scheduled', { campaignName, pushTime: nextPush.get('pushTime') });
+      return Promise.resolve(null);
+  }
+
   return getPushesByCampaign(pushCampaign)
     .then((pushStatuses) => {
       // Bail out if the push for the next interval has already been scheduled
       for (const push of pushStatuses) {
-        if (push.get('pushTime') === nextPushTime) {
+        if (push.get('pushTime') === nextPushTime &&
+              push.get('status') === 'scheduled') {
           logger.debug('Push already scheduled', { campaignName, pushTime: push.get('pushTime') });
           return null;
         }
@@ -111,7 +121,7 @@ function scheduleNextPush(pushCampaign, now) {
         .then(() => {
           const pushes = pushCampaign.relation('pushes');
           pushes.add(pushStatus);
-          return pushCampaign.save(null, { useMasterKey: true });
+          return pushCampaign.save({ nextPush: pushStatus }, { useMasterKey: true });
         })
         .then(() => {
           logger.info('Scheduled next push', {
