@@ -151,6 +151,11 @@ describe('scheduleNextPush', () => {
 
   it('should create a _PushStatus', (done) => {
     return scheduleNextPush(pushCampaign, now)
+      .then((nextPush) => {
+        expect(nextPush).not.toBeNull();
+        expect(pushCampaign.get('nextPush').id).toBeDefined();
+        expect(pushCampaign.get('nextPush').id).toEqual(nextPush.id);
+      })
       .then(() => getPushesByCampaign(pushCampaign))
       .then(([ pushStatus ]) => {
         expect(pushStatus).toBeDefined();
