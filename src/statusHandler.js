@@ -7,6 +7,11 @@ module.exports = {
       throw new Error('now must be defined');
     }
 
+    // Absolute time push already sent
+    if (pushStatus.has('count') && pushStatus.has('numSent')) {
+      return Promise.resolve(true);
+    }
+
     const ttl = now - 24 * 60 * 60 * 1000;
     logger.debug('Completion ttl', { ttl });
 
@@ -37,10 +42,8 @@ module.exports = {
   addOffsetCounts(pushStatus, offset) {
     logger.debug('Initializing offset counts', Object.assign({ offset }, pushStatus.toJSON()));
 
-    if (
-      typeof offset === 'undefined' && // Everyone gets it at the same time.
-      pushStatus.get('status') === 'scheduled'
-    ) {
+    // Everyone gets it at the same time.
+    if (typeof offset === 'undefined') {
       // pushStatus.set('status', 'running');
       pushStatus.increment('count', 0);
       pushStatus.increment('numSent', 0);
@@ -49,7 +52,7 @@ module.exports = {
     } else if (typeof offset !== 'undefined') {
       // Parse JS SDK doesn't allow nested increment.
       // So we have to call the rest endpoint directly.
-      const update = { };
+      const update = {};
       update[`sentPerUTCOffset.${offset}`] = { __op: 'Increment', amount: 0 };
       update[`failedPerUTCOffset.${offset}`] = { __op: 'Increment', amount: 0 };
 
