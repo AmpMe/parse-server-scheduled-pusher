@@ -2,7 +2,7 @@ const Parse = require('parse/node');
 const Promise = require('bluebird');
 const { flatten, logger } = require('./util');
 
-function batchQuery(where, batchSize, count, order = 'createdAt') {
+function batchQuery(where, batchSize, count, order = 'objectId') {
   const items = [];
   for (let skip = 0; skip < count; skip += batchSize) {
     if (skip > count) {
@@ -19,16 +19,60 @@ function batchQuery(where, batchSize, count, order = 'createdAt') {
   return items;
 }
 
-function batchPushWorkItem(pushWorkItem, batchSize = 100) {
-  const installationsQ = Parse.Query.fromJSON('_Installation', {
-    where: pushWorkItem.query.where,
-  });
+function sliceArray(array, size) {
+  const results = [];
+  while (array.length > 0) {
+    results.push(array.slice(0, size));
+    array = array.slice(size);
+  }
+  return results;
+}
 
-  return installationsQ.count({ useMasterKey: true })
-    .then((count) => (
-      batchQuery(pushWorkItem.query.where, batchSize, count)
-        .map((batch) => Object.assign({}, pushWorkItem, { query: batch }))
-    ));
+function getObjectIds(where, batchSize, firstElement) {
+  const installationsQ = Parse.Query.fromJSON('_Installation', {
+    where,
+  });
+  installationsQ.exists('deviceToken');
+  installationsQ.limit(batchSize);
+  installationsQ.select([ 'objectId' ]);
+  installationsQ.ascending('objectId');
+  if (firstElement) {
+    installationsQ.greaterThan('objectId', firstElement);
+  }
+  return installationsQ.find({ useMasterKey: true });
+}
+
+function smartBatch(where, batchSize, firstElement, objects = []) {
+  return getObjectIds(where, batchSize, firstElement).then((results) => {
+    objects.push(results.map((res) => res.id));
+    if (results.length === 0) {
+      console.log('No results found...'); // eslint-disable-line
+      return;
+    }
+    const last = results[results.length-1].id;
+    console.log('Done: '+ results.length + ' ' +  last); // eslint-disable-line
+    if (results.length === batchSize) {
+      return smartBatch(where, batchSize, last, objects);
+    }
+  }).then(() => {
+    if (objects.length > 0) {
+      logger.info(`Creating about ${objects.length * batchSize}`);
+    }
+    return objects.reduce((memo, array) => {
+      return memo.concat(sliceArray(array, 100));
+    }, []);
+  });
+}
+
+function batchPushWorkItem(pushWorkItem, batchSize = 100, querySize = 10000) {
+  return smartBatch(pushWorkItem.query.where, querySize).then((slices) => {
+    return slices.reduce((memo, array) => {
+      return memo.concat(sliceArray(array, batchSize));
+    }, []).map((slice) => {
+      const batch = { objectId: { $in: slice } };
+      return Object.assign({}, pushWorkItem, { query: { where: batch } });
+    });
+  });
 }
 
 function getScheduledPushes() {
@@ -55,10 +99,34 @@ function getScheduledPushes() {
       }
     ))
     .then(flatten)
-
     .tap((pushStatuses) => {
-      logger.info('Found potential pushes', { pushStatuses: pushStatuses.map((p) => p.toJSON()) });
+      logger.info(`Found ${pushStatuses.length} potential pushes`, {
+        pushStatuses: pushStatuses.map((p) => p.id),
+      });
     });
 }
 
-module.exports = { getScheduledPushes, batchQuery, batchPushWorkItem };
+function getPushesByCampaign(campaign) {
+  const pushes = campaign.relation('pushes');
+  return pushes.query()
+    .descending('createdAt')
+    .find({ useMasterKey: true });
+}
+
+function getActiveCampaigns() {
+  logger.debug('Finding active campaigns');
+  const campaignsQ = new Parse.Query('PushCampaign');
+  return campaignsQ
+    .equalTo('status', 'active')
+    .include('nextPush')
+    .find({ useMasterKey: true });
+}
+
+module.exports = {
+  getActiveCampaigns,
+  getScheduledPushes,
+  getPushesByCampaign,
+  batchQuery,
+  batchPushWorkItem,
+  smartBatch,
+};

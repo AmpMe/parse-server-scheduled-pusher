@@ -69,12 +69,11 @@ describe('batchPushWorkItem', () => {
         expect(batches.length).toBeDefined('Batches should be an Array');
         expect(batches.length).toEqual(5);
 
-        const sum = batches.reduce((acc, batch) => batch.query.limit + acc, 0);
-        expect(sum).toBe(15);
+        const sum = batches.reduce((acc, batch) => batch.query.where.objectId.$in.length + acc, 0);
+        expect(sum).toBe(14);
 
         batches.forEach((batch) => {
           expect(batch.applicationId).toEqual('test', 'Batch applicationId should match config');
-          expect(batch.query.limit).toEqual(3);
         });
       })
       .then(done)

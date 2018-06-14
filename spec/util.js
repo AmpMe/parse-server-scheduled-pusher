@@ -1,3 +1,4 @@
+const Parse = require('parse/node');
 const { master } = require('parse-server/lib/Auth');
 const { create } = require('parse-server/lib/rest');
 const { dropDB } = require('parse-server-test-runner');
@@ -9,8 +10,9 @@ function stripTimezone(d) {
 }
 
 const installations = require('./fixtures/installations.json');
+
 function setupInstallations(done) {
-  const config = new Config('test', '/1');
+  const config = Config.get('test', '/1');
   const p = dropDB()
     .then(() => Promise.all(installations.map((inst, i) => create(config, master(config), '_Installation', {
       id: i.toString(),
@@ -25,8 +27,28 @@ function setupInstallations(done) {
   return p;
 }
 
+function createCampaign(now) {
+  const pushCampaign = new Parse.Object('PushCampaign');
+  return pushCampaign
+    .save({
+      createdAt: now,
+      status: 'active',
+      interval: 'daily',
+      sendTime: '23:00:00',
+      query: '{"user":{"__type":"Pointer","className":"_User","objectId":"0K1kfQnyj6"}}',
+      payload: JSON.stringify({
+        alert: 'ALERT!!',
+        uri: 'foo://bar?baz=qux',
+        url: 'foo://bar?baz=qux',
+        notification_id: 'AbaINdDnqs',
+        type: 'foo',
+      }),
+    }, { useMasterKey: true });
+}
+
 module.exports = {
   stripTimezone,
   setupInstallations,
   installations,
+  createCampaign,
 };

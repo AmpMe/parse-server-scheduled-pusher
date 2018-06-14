@@ -42,8 +42,10 @@ function getCurrentOffsets(offsets, pushTime, now) {
 function createPushWorkItems(pushStatus, applicationId, now) {
   now = now || new Date();
 
+  const where = JSON.parse(pushStatus.get('query'));
+  const body = { data: JSON.parse(pushStatus.get('payload')) };
+
   const offsetToPwi = (UTCOffset) => {
-    const where = JSON.parse(pushStatus.get('query'));
     const installationsQ = Parse.Query.fromJSON('_Installation', { where });
 
     if (typeof UTCOffset !== 'undefined') {
@@ -65,7 +67,7 @@ function createPushWorkItems(pushStatus, applicationId, now) {
 
     return {
       applicationId,
-      body: { data: JSON.parse(pushStatus.get('payload')) },
+      body,
       query: installationsQ.toJSON(),
       pushStatus,
       UTCOffset,

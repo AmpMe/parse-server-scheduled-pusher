@@ -28,7 +28,7 @@
     "eslint-config-google": "^0.9.1",
     "jasmine": "^2.6.0",
     "nyc": "^11.0.3",
-    "parse-server": "parse-community/parse-server#latest",
+    "parse-server": "^2.6.4",
     "parse-server-test-runner": "git://github.com/AmpMe/parse-server-test-runner.git#peer-deps"
   }
 }
