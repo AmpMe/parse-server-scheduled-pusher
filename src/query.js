@@ -65,17 +65,6 @@ function smartBatch(where, batchSize, firstElement, objects = []) {
   });
 }
 
-function batchPushWorkItem(pushWorkItem, batchSize = 100, querySize = 10000) {
-  return smartBatch(pushWorkItem.query.where, querySize).then((slices) => {
-    return slices.reduce((memo, array) => {
-      return memo.concat(sliceArray(array, batchSize));
-    }, []).map((slice) => {
-      const batch = { objectId: { $in: slice } };
-      return Object.assign({}, pushWorkItem, { query: { where: batch } });
-    });
-  });
-}
-
 function getScheduledPushes() {
   const pushStatusesQ = new Parse.Query('_PushStatus');
   pushStatusesQ.containedIn('status', [ 'scheduled' ]);
@@ -128,7 +117,5 @@ module.exports = {
   getScheduledPushes,
   getPushesByCampaign,
   batchQuery,
-  batchPushWorkItem,
-  smartBatch,
   getObjectIds,
 };
