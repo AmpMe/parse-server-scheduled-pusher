@@ -11,8 +11,21 @@ function stripTimezone(d) {
 
 const installations = require('./fixtures/installations.json');
 
+async function bulkInstallations() {
+  const config = Config.get('test', '/1');
+  for (let i = 0; i < 1000; i++) {
+    await create(config, master(config), '_Installation', {
+      id: i.toString(),
+      deviceToken: i.toString(),
+      deviceType: 'android',
+      timeZone: 'America/Buenos_Aires',
+    });
+  }
+}
+
 function setupInstallations(done) {
   const config = Config.get('test', '/1');
+
   const p = dropDB()
     .then(() => Promise.all(installations.map((inst, i) => create(config, master(config), '_Installation', {
       id: i.toString(),
@@ -51,4 +64,5 @@ module.exports = {
   setupInstallations,
   installations,
   createCampaign,
+  bulkInstallations,
 };

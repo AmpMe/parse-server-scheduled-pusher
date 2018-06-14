@@ -28,28 +28,29 @@ function sliceArray(array, size) {
   return results;
 }
 
-function getObjectIds(where, batchSize, firstElement) {
+async function getObjectIds(where, querySize, previousQueryLast) {
   const installationsQ = Parse.Query.fromJSON('_Installation', {
     where,
   });
   installationsQ.exists('deviceToken');
-  installationsQ.limit(batchSize);
+  installationsQ.limit(querySize);
   installationsQ.select([ 'objectId' ]);
   installationsQ.ascending('objectId');
-  if (firstElement) {
-    installationsQ.greaterThan('objectId', firstElement);
+  if (previousQueryLast) {
+    installationsQ.greaterThan('objectId', previousQueryLast);
   }
-  return installationsQ.find({ useMasterKey: true });
+  const installations = await installationsQ.find({ useMasterKey: true });
+  return installations.map((inst) => inst.id);
 }
 
 function smartBatch(where, batchSize, firstElement, objects = []) {
   return getObjectIds(where, batchSize, firstElement).then((results) => {
-    objects.push(results.map((res) => res.id));
+    objects.push(results);
     if (results.length === 0) {
       console.log('No results found...'); // eslint-disable-line
       return;
     }
-    const last = results[results.length-1].id;
+    const last = results[results.length-1];
     console.log('Done: '+ results.length + ' ' +  last); // eslint-disable-line
     if (results.length === batchSize) {
       return smartBatch(where, batchSize, last, objects);
@@ -129,4 +130,5 @@ module.exports = {
   batchQuery,
   batchPushWorkItem,
   smartBatch,
+  getObjectIds,
 };
