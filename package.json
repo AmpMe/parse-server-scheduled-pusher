@@ -13,7 +13,7 @@
     "test": "TZ=UTC TESTING=1 jasmine"
   },
   "engines": {
-    "node": ">=6"
+    "node": ">=8"
   },
   "dependencies": {
     "bluebird": "^3.5.0",
