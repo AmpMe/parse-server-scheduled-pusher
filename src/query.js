@@ -19,15 +19,6 @@ function batchQuery(where, batchSize, count, order = 'objectId') {
   return items;
 }
 
-function sliceArray(array, size) {
-  const results = [];
-  while (array.length > 0) {
-    results.push(array.slice(0, size));
-    array = array.slice(size);
-  }
-  return results;
-}
-
 async function getObjectIds(where, querySize, previousQueryLast) {
   const installationsQ = Parse.Query.fromJSON('_Installation', {
     where,
@@ -41,28 +32,6 @@ async function getObjectIds(where, querySize, previousQueryLast) {
   }
   const installations = await installationsQ.find({ useMasterKey: true });
   return installations.map((inst) => inst.id);
-}
-
-function smartBatch(where, batchSize, firstElement, objects = []) {
-  return getObjectIds(where, batchSize, firstElement).then((results) => {
-    objects.push(results);
-    if (results.length === 0) {
-      console.log('No results found...'); // eslint-disable-line
-      return;
-    }
-    const last = results[results.length-1];
-    console.log('Done: '+ results.length + ' ' +  last); // eslint-disable-line
-    if (results.length === batchSize) {
-      return smartBatch(where, batchSize, last, objects);
-    }
-  }).then(() => {
-    if (objects.length > 0) {
-      logger.info(`Creating about ${objects.length * batchSize}`);
-    }
-    return objects.reduce((memo, array) => {
-      return memo.concat(sliceArray(array, 100));
-    }, []);
-  });
 }
 
 function getScheduledPushes() {
