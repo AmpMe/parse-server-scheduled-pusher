@@ -1,9 +1,7 @@
 const { dropDB } = require('parse-server-test-runner');
 const Parse = require('parse/node');
 
-const { batchQuery, batchPushWorkItem, getScheduledPushes } = require('../src/query');
-
-const { setupInstallations } = require('./util');
+const { batchQuery, getScheduledPushes } = require('../src/query');
 
 describe('getScheduledPushes', () => {
   beforeEach((done) => {
@@ -56,27 +54,4 @@ describe('batchQuery', () => {
     const queryResultLength = batches.reduce((sum, item) => item.limit + sum, 0);
     expect(queryResultLength).toEqual(3 * batches.length);
   });
-});
-
-describe('batchPushWorkItem', () => {
-  it('should take one PushWorkItem and produce paginated PushWorkItems', (done) => {
-    const pwi = require('./fixtures/pushWorkItem.json');
-
-    return dropDB()
-      .then(setupInstallations)
-      .then(() => batchPushWorkItem(pwi, 3))
-      .then((batches) => {
-        expect(batches.length).toBeDefined('Batches should be an Array');
-        expect(batches.length).toEqual(5);
-
-        const sum = batches.reduce((acc, batch) => batch.query.where.objectId.$in.length + acc, 0);
-        expect(sum).toBe(14);
-
-        batches.forEach((batch) => {
-          expect(batch.applicationId).toEqual('test', 'Batch applicationId should match config');
-        });
-      })
-      .then(done)
-      .catch(done.fail);
-  }, 5000 * 10);
 });
