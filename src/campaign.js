@@ -62,7 +62,7 @@ function toLocalTime(date) {
   return isoString.substring(0, isoString.indexOf('Z'));
 }
 
-function scheduleNextPush(pushCampaign, now) {
+async function scheduleNextPush(pushCampaign, now) {
   const nextPushTime = toLocalTime(
     getNextPushTime({
       interval: pushCampaign.get('interval'),
@@ -80,57 +80,54 @@ function scheduleNextPush(pushCampaign, now) {
 
   const nextPush = pushCampaign.get('nextPush');
   if (nextPush &&
-      nextPush.get('pushTime') === nextPushTime &&
-      nextPush.get('status') === 'scheduled'
+    nextPush.get('pushTime') === nextPushTime &&
+    nextPush.get('status') === 'scheduled'
   ) {
-      logger.debug('Push already scheduled', { campaignName, pushTime: nextPush.get('pushTime') });
-      return Promise.resolve(null);
+    logger.debug('Push already scheduled', { campaignName, pushTime: nextPush.get('pushTime') });
+    return null;
   }
 
-  return getPushesByCampaign(pushCampaign)
-    .then((pushStatuses) => {
-      // Bail out if the push for the next interval has already been scheduled
-      for (const push of pushStatuses) {
-        if (push.get('pushTime') === nextPushTime &&
-              push.get('status') === 'scheduled') {
-          logger.debug('Push already scheduled', { campaignName, pushTime: push.get('pushTime') });
-          return null;
-        }
-      }
+  const pushStatuses = await getPushesByCampaign(pushCampaign);
 
-      const payload = pushCampaign.get('payload');
-      const data = JSON.parse(payload);
-      let pushHash;
-      if (typeof data.alert === 'string') {
-        pushHash = md5Hash(data.alert);
-      } else if (typeof data.alert === 'object') {
-        pushHash = md5Hash(JSON.stringify(data.alert));
-      } else {
-        pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
-      }
+  // Bail out if the push for the next interval has already been scheduled
+  for (const push of pushStatuses) {
+    if (push.get('pushTime') === nextPushTime &&
+      push.get('status') === 'scheduled') {
+      logger.debug('Push already scheduled', { campaignName, pushTime: push.get('pushTime') });
+      return null;
+    }
+  }
 
-      const pushStatus = new Parse.Object('_PushStatus');
-      return pushStatus.save({
-        pushTime: nextPushTime,
-        query: pushCampaign.get('query'),
-        payload,
-        source: 'parse-server-scheduled-pusher',
-        status: 'scheduled',
-        pushHash,
-      }, { useMasterKey: true })
-        .then(() => {
-          const pushes = pushCampaign.relation('pushes');
-          pushes.add(pushStatus);
-          return pushCampaign.save({ nextPush: pushStatus }, { useMasterKey: true });
-        })
-        .then(() => {
-          logger.info('Scheduled next push', {
-            pushStatus: pushStatus.toJSON(),
-            campaignName,
-          });
-          return pushStatus;
-        });
+  const payload = pushCampaign.get('payload');
+  const data = JSON.parse(payload);
+  let pushHash;
+  if (typeof data.alert === 'string') {
+    pushHash = md5Hash(data.alert);
+  } else if (typeof data.alert === 'object') {
+    pushHash = md5Hash(JSON.stringify(data.alert));
+  } else {
+    pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
+  }
+
+  const pushStatus = new Parse.Object('_PushStatus');
+  await pushStatus.save({
+    pushTime: nextPushTime,
+    query: pushCampaign.get('query'),
+    payload,
+    source: 'parse-server-scheduled-pusher',
+    status: 'scheduled',
+    pushHash,
+  }, { useMasterKey: true });
+
+  const pushes = pushCampaign.relation('pushes');
+  pushes.add(pushStatus);
+  await pushCampaign.save({ nextPush: pushStatus }, { useMasterKey: true });
+
+  logger.info('Scheduled next push', {
+    pushStatus: pushStatus.toJSON(),
+    campaignName,
   });
+  return pushStatus;
 }
 
 module.exports = {
