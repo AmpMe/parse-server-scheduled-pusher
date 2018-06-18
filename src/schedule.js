@@ -99,4 +99,5 @@ module.exports = {
   getCurrentOffsets,
   getUnsentOffsets,
   createPushWorkItems,
+  pushTimeHasTimezoneComponent,
 };
