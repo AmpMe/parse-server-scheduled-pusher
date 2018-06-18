@@ -28,7 +28,8 @@ module.exports = {
       })
 
       // We set the offsets to prevent resending in the next iteration
-      .map((pwi) => addOffsetCounts(pwi.pushStatus, pwi.UTCOffset, now));
+      .map((pwi) => addOffsetCounts(pwi.pushStatus, pwi.UTCOffset, now)
+        .then(() => pwi));
 
     const publish = (msg) => publisher.publish(channel, msg);
     for (const pwi of pushWorkItems) {
