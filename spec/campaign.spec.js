@@ -1,9 +1,10 @@
+const Parse = require('parse/node');
 const { dropDB } = require('parse-server-test-runner');
 
-const { scheduleNextPush, getNextPushTime } = require('../src/campaign');
+const { scheduleNextPush, getNextPushTime, deleteDuplicatePushes } = require('../src/campaign');
 const { getActiveCampaigns, getPushesByCampaign } = require('../src/query');
 
-const { createCampaign } = require('./util');
+const { createCampaign, stripTimezone } = require('./util');
 
 describe('getNextPushTime', () => {
   // Thursday, August 10
@@ -198,5 +199,62 @@ describe('getActiveCampaigns', () => {
       .then(getActiveCampaigns)
       .then(([ pushCampaign ]) => expect(pushCampaign).toBeDefined())
       .then(done, done.fail);
+  });
+});
+
+describe('deleteDuplicatePushes', () => {
+  async function campaignWithPushes(numPushes) {
+    const now = new Date('2017-08-10T19:18:07.309Z');
+    const campaign = await createCampaign(now);
+    const pushes = campaign.relation('pushes');
+
+    for (let i=0; i<numPushes; i++) {
+      const push = new Parse.Object('_PushStatus');
+      await push.save({
+        pushTime: stripTimezone(now),
+        status: 'scheduled',
+        query: '{}',
+        payload: '{"alert":"alert!"}',
+        title: 'title',
+        numSent: 0,
+        source: 'rest',
+        pushHash: '1328bee6e66a1c8f6fa5d5546812e671',
+      }, { useMasterKey: true });
+
+      pushes.add(push);
+    }
+
+    await campaign.save(null, { useMasterKey: true });
+    return campaign;
+  }
+
+  it('should delete pushes of a PushCampaign with the same pushTime', async () => {
+    const campaign = await campaignWithPushes(2);
+
+    const pushStatuses = await getPushesByCampaign(campaign);
+    expect(pushStatuses.length).toEqual(2);
+
+    expect((await deleteDuplicatePushes(campaign, pushStatuses)).length).toEqual(1);
+    expect((await getPushesByCampaign(campaign)).length).toEqual(1);
+  });
+
+  it('should not do anything if there are no duplicates', async () => {
+    const campaign = await campaignWithPushes(1);
+
+    const pushStatuses = await getPushesByCampaign(campaign);
+    expect(pushStatuses.length).toEqual(1);
+
+    expect((await deleteDuplicatePushes(campaign, pushStatuses)).length).toEqual(1);
+    expect((await getPushesByCampaign(campaign)).length).toEqual(1);
+  });
+
+  it('should not do anything if there are no pushes at all', async () => {
+    const campaign = await campaignWithPushes(0);
+
+    const pushStatuses = await getPushesByCampaign(campaign);
+    expect(pushStatuses.length).toEqual(0);
+
+    expect((await deleteDuplicatePushes(campaign, pushStatuses)).length).toEqual(0);
+    expect((await getPushesByCampaign(campaign)).length).toEqual(0);
   });
 });

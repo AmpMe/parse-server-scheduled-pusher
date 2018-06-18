@@ -62,6 +62,31 @@ function toLocalTime(date) {
   return isoString.substring(0, isoString.indexOf('Z'));
 }
 
+async function deleteDuplicatePushes(campaign, pushStatuses) {
+  const grouped = pushStatuses.reduce((acc, pushStatus) => {
+    const pushTime = pushStatus.get('pushTime');
+    acc[pushTime] = acc[pushTime] || [];
+    acc[pushTime].push(pushStatus);
+    return acc;
+  }, {});
+
+  return await Promise.all(Object.keys(grouped).map(async (pushTime) => {
+    const pushes = grouped[pushTime];
+    if (pushes.length === 1) {
+      return pushes.pop();
+    }
+
+    const toDelete = pushes.slice(1);
+    logger.info('Deleting duplicate pushes', {
+      campaign: campaign.toJSON(),
+      pushStatuses: pushes.map((p) => p.toJSON())
+    });
+    await Promise.all(toDelete.map((push) => push.destroy({ useMasterKey: true })));
+
+    return pushes.pop();
+  }));
+}
+
 async function scheduleNextPush(pushCampaign, now) {
   const nextPushTime = toLocalTime(
     getNextPushTime({
@@ -87,7 +112,8 @@ async function scheduleNextPush(pushCampaign, now) {
     return null;
   }
 
-  const pushStatuses = await getPushesByCampaign(pushCampaign);
+  const scheduledPushes = await getPushesByCampaign(pushCampaign);
+  const pushStatuses = await deleteDuplicatePushes(pushCampaign, scheduledPushes);
 
   // Bail out if the push for the next interval has already been scheduled
   for (const push of pushStatuses) {
@@ -133,4 +159,5 @@ async function scheduleNextPush(pushCampaign, now) {
 module.exports = {
   scheduleNextPush,
   getNextPushTime,
+  deleteDuplicatePushes,
 };
