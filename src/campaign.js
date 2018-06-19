@@ -45,10 +45,14 @@ function getNextPushTime({ interval, sendTime, dayOfWeek, dayOfMonth }, now) {
         pushTime.setUTCDate(date);
       }
 
-      if (now.getUTCDay() <= dayOfWeek) {
-        thisWeek();
-      } else { // too late for today
+      if (now.getUTCDay() > dayOfWeek) {
         nextWeek();
+      } else if (now.getUTCDay() < dayOfWeek) {
+        thisWeek();
+      } else if (now.getUTCDay() === dayOfWeek && +pushTime < +now) { // too late for today
+        nextWeek();
+      } else {
+        thisWeek();
       }
       return pushTime;
 
