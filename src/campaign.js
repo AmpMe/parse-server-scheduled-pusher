@@ -83,7 +83,7 @@ async function deleteDuplicatePushes(campaign, pushStatuses) {
     const toDelete = pushes.slice(1);
     logger.info('Deleting duplicate pushes', {
       campaign: campaign.toJSON(),
-      pushStatuses: pushes.map((p) => p.toJSON())
+      pushStatuses: pushes.map((p) => p.toJSON()),
     });
     await Promise.all(toDelete.map((push) => push.destroy({ useMasterKey: true })));
 
