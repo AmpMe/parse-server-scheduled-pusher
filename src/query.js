@@ -43,20 +43,7 @@ function getScheduledPushes() {
       batchQuery(pushStatusesQ.toJSON().where, 1000, count)
         .map((batch) => Parse.Query.fromJSON('_PushStatus', batch)))
 
-    .mapSeries((query) => Promise.resolve(query.find({ useMasterKey: true }))
-      .filter((pushStatus) => {
-        // Filter out immediate pushes which are currently running
-        if (pushStatus.get('status') === 'running' && !pushStatus.has('sentPerUTCOffset')) {
-          logger.debug('Filtered out pushStatus', {
-            type: 'immediate',
-            pushStatus: pushStatus.toJSON(),
-          });
-          return false;
-        }
-
-        return true;
-      }
-    ))
+    .mapSeries((query) => Promise.resolve(query.find({ useMasterKey: true })))
     .then(flatten)
     .tap((pushStatuses) => {
       logger.info(`Found ${pushStatuses.length} potential pushes`, {
