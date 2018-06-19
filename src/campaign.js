@@ -107,15 +107,6 @@ async function scheduleNextPush(pushCampaign, now) {
     nextPushTime,
   });
 
-  const nextPush = pushCampaign.get('nextPush');
-  if (nextPush &&
-    nextPush.get('pushTime') === nextPushTime &&
-    nextPush.get('status') === 'scheduled'
-  ) {
-    logger.debug('Push already scheduled', { campaignName, pushTime: nextPush.get('pushTime') });
-    return null;
-  }
-
   const scheduledPushes = await getPushesByCampaign(pushCampaign);
   const pushStatuses = await deleteDuplicatePushes(pushCampaign, scheduledPushes);
 
