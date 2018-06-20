@@ -50,6 +50,8 @@ function run(emitter = new EventEmitter()) {
     .catch((err) => {
       logger.error(err.message, { stack: err.stack, name: err.name });
     });
+
+  return emitter;
 }
 
 if (!module.parent) { // MAIN

@@ -19,60 +19,19 @@ function batchQuery(where, batchSize, count, order = 'objectId') {
   return items;
 }
 
-function sliceArray(array, size) {
-  const results = [];
-  while (array.length > 0) {
-    results.push(array.slice(0, size));
-    array = array.slice(size);
-  }
-  return results;
-}
-
-function getObjectIds(where, batchSize, firstElement) {
+async function getObjectIds(where, querySize, previousQueryLast) {
   const installationsQ = Parse.Query.fromJSON('_Installation', {
     where,
   });
   installationsQ.exists('deviceToken');
-  installationsQ.limit(batchSize);
+  installationsQ.limit(querySize);
   installationsQ.select([ 'objectId' ]);
   installationsQ.ascending('objectId');
-  if (firstElement) {
-    installationsQ.greaterThan('objectId', firstElement);
+  if (previousQueryLast) {
+    installationsQ.greaterThan('objectId', previousQueryLast);
   }
-  return installationsQ.find({ useMasterKey: true });
-}
-
-function smartBatch(where, batchSize, firstElement, objects = []) {
-  return getObjectIds(where, batchSize, firstElement).then((results) => {
-    objects.push(results.map((res) => res.id));
-    if (results.length === 0) {
-      console.log('No results found...'); // eslint-disable-line
-      return;
-    }
-    const last = results[results.length-1].id;
-    console.log('Done: '+ results.length + ' ' +  last); // eslint-disable-line
-    if (results.length === batchSize) {
-      return smartBatch(where, batchSize, last, objects);
-    }
-  }).then(() => {
-    if (objects.length > 0) {
-      logger.info(`Creating about ${objects.length * batchSize}`);
-    }
-    return objects.reduce((memo, array) => {
-      return memo.concat(sliceArray(array, 100));
-    }, []);
-  });
-}
-
-function batchPushWorkItem(pushWorkItem, batchSize = 100, querySize = 10000) {
-  return smartBatch(pushWorkItem.query.where, querySize).then((slices) => {
-    return slices.reduce((memo, array) => {
-      return memo.concat(sliceArray(array, batchSize));
-    }, []).map((slice) => {
-      const batch = { objectId: { $in: slice } };
-      return Object.assign({}, pushWorkItem, { query: { where: batch } });
-    });
-  });
+  const installations = await installationsQ.find({ useMasterKey: true });
+  return installations.map((inst) => inst.id);
 }
 
 function getScheduledPushes() {
@@ -84,20 +43,7 @@ function getScheduledPushes() {
       batchQuery(pushStatusesQ.toJSON().where, 1000, count)
         .map((batch) => Parse.Query.fromJSON('_PushStatus', batch)))
 
-    .mapSeries((query) => Promise.resolve(query.find({ useMasterKey: true }))
-      .filter((pushStatus) => {
-        // Filter out immediate pushes which are currently running
-        if (pushStatus.get('status') === 'running' && !pushStatus.has('sentPerUTCOffset')) {
-          logger.debug('Filtered out pushStatus', {
-            type: 'immediate',
-            pushStatus: pushStatus.toJSON(),
-          });
-          return false;
-        }
-
-        return true;
-      }
-    ))
+    .mapSeries((query) => Promise.resolve(query.find({ useMasterKey: true })))
     .then(flatten)
     .tap((pushStatuses) => {
       logger.info(`Found ${pushStatuses.length} potential pushes`, {
@@ -127,6 +73,5 @@ module.exports = {
   getScheduledPushes,
   getPushesByCampaign,
   batchQuery,
-  batchPushWorkItem,
-  smartBatch,
+  getObjectIds,
 };

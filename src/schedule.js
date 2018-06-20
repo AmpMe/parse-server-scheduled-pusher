@@ -60,6 +60,7 @@ function createPushWorkItems(pushStatus, applicationId, now) {
       if (requestedTimezones) {
         // intersection
         timezonesToSend = timezonesToSend.filter((t) => requestedTimezones.has(t));
+        timezonesToSend = Array.from(new Set(timezonesToSend));
       }
 
       installationsQ.containedIn('timeZone', timezonesToSend);
@@ -99,4 +100,5 @@ module.exports = {
   getCurrentOffsets,
   getUnsentOffsets,
   createPushWorkItems,
+  pushTimeHasTimezoneComponent,
 };

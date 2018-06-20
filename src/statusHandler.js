@@ -1,4 +1,6 @@
 const Parse = require('parse/node');
+
+const { pushTimeHasTimezoneComponent } = require('./schedule');
 const { logger } = require('./util');
 
 module.exports = {
@@ -7,16 +9,22 @@ module.exports = {
       throw new Error('now must be defined');
     }
 
+    const pushTime = pushStatus.get('pushTime');
+
     // Absolute time push already sent
-    if (pushStatus.has('count') && pushStatus.has('numSent')) {
-      return Promise.resolve(true);
+    if (pushTimeHasTimezoneComponent(pushTime)
+      && pushStatus.has('count') && pushStatus.has('numSent')) {
+      const status = pushStatus.get('numSent') === 0 ? 'failed' : 'succeeded';
+      pushStatus.set('status', status);
+      return pushStatus.save(null, { useMasterKey: true })
+        .then(() => true);
     }
 
     const ttl = now - 24 * 60 * 60 * 1000;
     logger.debug('Completion ttl', { ttl });
 
     // If push was supposed to be sent more than 24 hours ago.
-    if (+new Date(pushStatus.get('pushTime')) < ttl) {
+    if (+new Date(pushTime) < ttl) {
       const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset') || {};
 
       let sentSum = 0;

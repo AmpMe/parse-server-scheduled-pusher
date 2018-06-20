@@ -52,6 +52,24 @@ describe('statusHandler', () => {
     const longTimeAgo = new Date(0);
     const now = new Date('2017-07-20T12:20:40.730Z');
 
+    it('should mark successful absolute time pushes', async () => {
+      const pushStatus = await send(longTimeAgo, false);
+      await pushStatus.save({ numSent: 100 }, { useMasterKey: true });
+
+      expect(await markAsComplete(pushStatus, now)).toEqual(true);
+      await pushStatus.fetch({ useMasterKey: true });
+      expect(pushStatus.get('status')).toEqual('succeeded');
+    });
+
+    it('should mark failed absolute time pushes', async () => {
+      const pushStatus = await send(longTimeAgo, false);
+      await pushStatus.save({ numSent: 0 }, { useMasterKey: true });
+
+      expect(await markAsComplete(pushStatus, now)).toEqual(true);
+      await pushStatus.fetch({ useMasterKey: true });
+      expect(pushStatus.get('status')).toEqual('failed');
+    });
+
     it('should not mark recently scheduled PushStatus', (done) => {
       send(now)
         .then((pushStatus) => markAsComplete(pushStatus, now))

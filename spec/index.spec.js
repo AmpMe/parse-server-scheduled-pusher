@@ -4,7 +4,7 @@ const { setupInstallations } = require('./util');
 const { EventEmitterMQ } = require('parse-server/lib/Adapters/MessageQueue/EventEmitterMQ');
 
 const { sendScheduledPushes, runCampaigns } = require('../src');
-const { stripTimezone, createCampaign } = require('./util');
+const { stripTimezone, createCampaign, bulkInstallations } = require('./util');
 
 // Integration tests
 describe('Sending scheduled pushes', () => {
@@ -13,7 +13,7 @@ describe('Sending scheduled pushes', () => {
   const channel = 'my-channel';
 
   describe('in local time', () => {
-    it('should work', (done) => {
+    it('should work', async () => {
       const now = new Date('2017-08-24T17:27:43.105Z');
       const pushTime = new Date('2017-08-24T14:27:43.105Z');
 
@@ -28,7 +28,8 @@ describe('Sending scheduled pushes', () => {
         });
       });
 
-      Parse.Push.send({
+      await bulkInstallations();
+      await Parse.Push.send({
         push_time: stripTimezone(pushTime),
         data: {
           alert: 'Alert!!!!!',
@@ -42,8 +43,7 @@ describe('Sending scheduled pushes', () => {
         .then(() => pwiReceivePromise)
         .then((pwi) => {
           expect(pwi).toBeDefined();
-        })
-        .then(done, done.fail);
+        });
     });
   });
 

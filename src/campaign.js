@@ -45,10 +45,14 @@ function getNextPushTime({ interval, sendTime, dayOfWeek, dayOfMonth }, now) {
         pushTime.setUTCDate(date);
       }
 
-      if (now.getUTCDay() <= dayOfWeek) {
-        thisWeek();
-      } else { // too late for today
+      if (now.getUTCDay() > dayOfWeek) {
         nextWeek();
+      } else if (now.getUTCDay() < dayOfWeek) {
+        thisWeek();
+      } else if (now.getUTCDay() === dayOfWeek && +pushTime < +now) { // too late for today
+        nextWeek();
+      } else {
+        thisWeek();
       }
       return pushTime;
 
@@ -62,7 +66,32 @@ function toLocalTime(date) {
   return isoString.substring(0, isoString.indexOf('Z'));
 }
 
-function scheduleNextPush(pushCampaign, now) {
+async function deleteDuplicatePushes(campaign, pushStatuses) {
+  const grouped = pushStatuses.reduce((acc, pushStatus) => {
+    const pushTime = pushStatus.get('pushTime');
+    acc[pushTime] = acc[pushTime] || [];
+    acc[pushTime].push(pushStatus);
+    return acc;
+  }, {});
+
+  return await Promise.all(Object.keys(grouped).map(async (pushTime) => {
+    const pushes = grouped[pushTime];
+    if (pushes.length === 1) {
+      return pushes.pop();
+    }
+
+    const toDelete = pushes.slice(1);
+    logger.info('Deleting duplicate pushes', {
+      campaign: campaign.toJSON(),
+      pushStatuses: toDelete.map((p) => p.toJSON()),
+    });
+    await Promise.all(toDelete.map((push) => push.destroy({ useMasterKey: true })));
+
+    return pushes.pop();
+  }));
+}
+
+async function scheduleNextPush(pushCampaign, now) {
   const nextPushTime = toLocalTime(
     getNextPushTime({
       interval: pushCampaign.get('interval'),
@@ -78,62 +107,52 @@ function scheduleNextPush(pushCampaign, now) {
     nextPushTime,
   });
 
-  const nextPush = pushCampaign.get('nextPush');
-  if (nextPush &&
-      nextPush.get('pushTime') === nextPushTime &&
-      nextPush.get('status') === 'scheduled'
-  ) {
-      logger.debug('Push already scheduled', { campaignName, pushTime: nextPush.get('pushTime') });
-      return Promise.resolve(null);
+  const scheduledPushes = await getPushesByCampaign(pushCampaign);
+  const pushStatuses = await deleteDuplicatePushes(pushCampaign, scheduledPushes);
+
+  // Bail out if the push for the next interval has already been scheduled
+  for (const push of pushStatuses) {
+    if (push.get('pushTime') === nextPushTime &&
+      push.get('status') === 'scheduled') {
+      logger.debug('Push already scheduled', { campaignName, pushTime: push.get('pushTime') });
+      return null;
+    }
   }
 
-  return getPushesByCampaign(pushCampaign)
-    .then((pushStatuses) => {
-      // Bail out if the push for the next interval has already been scheduled
-      for (const push of pushStatuses) {
-        if (push.get('pushTime') === nextPushTime &&
-              push.get('status') === 'scheduled') {
-          logger.debug('Push already scheduled', { campaignName, pushTime: push.get('pushTime') });
-          return null;
-        }
-      }
+  const payload = pushCampaign.get('payload');
+  const data = JSON.parse(payload);
+  let pushHash;
+  if (typeof data.alert === 'string') {
+    pushHash = md5Hash(data.alert);
+  } else if (typeof data.alert === 'object') {
+    pushHash = md5Hash(JSON.stringify(data.alert));
+  } else {
+    pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
+  }
 
-      const payload = pushCampaign.get('payload');
-      const data = JSON.parse(payload);
-      let pushHash;
-      if (typeof data.alert === 'string') {
-        pushHash = md5Hash(data.alert);
-      } else if (typeof data.alert === 'object') {
-        pushHash = md5Hash(JSON.stringify(data.alert));
-      } else {
-        pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
-      }
+  const pushStatus = new Parse.Object('_PushStatus');
+  await pushStatus.save({
+    pushTime: nextPushTime,
+    query: pushCampaign.get('query'),
+    payload,
+    source: 'parse-server-scheduled-pusher',
+    status: 'scheduled',
+    pushHash,
+  }, { useMasterKey: true });
 
-      const pushStatus = new Parse.Object('_PushStatus');
-      return pushStatus.save({
-        pushTime: nextPushTime,
-        query: pushCampaign.get('query'),
-        payload,
-        source: 'parse-server-scheduled-pusher',
-        status: 'scheduled',
-        pushHash,
-      }, { useMasterKey: true })
-        .then(() => {
-          const pushes = pushCampaign.relation('pushes');
-          pushes.add(pushStatus);
-          return pushCampaign.save({ nextPush: pushStatus }, { useMasterKey: true });
-        })
-        .then(() => {
-          logger.info('Scheduled next push', {
-            pushStatus: pushStatus.toJSON(),
-            campaignName,
-          });
-          return pushStatus;
-        });
+  const pushes = pushCampaign.relation('pushes');
+  pushes.add(pushStatus);
+  await pushCampaign.save({ nextPush: pushStatus }, { useMasterKey: true });
+
+  logger.info('Scheduled next push', {
+    pushStatus: pushStatus.toJSON(),
+    campaignName,
   });
+  return pushStatus;
 }
 
 module.exports = {
   scheduleNextPush,
   getNextPushTime,
+  deleteDuplicatePushes,
 };

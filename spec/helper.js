@@ -2,6 +2,10 @@ const { startParseServer, stopParseServer } = require('parse-server-test-runner'
 const Parse = require('parse/node');
 const mockPush = require('./mockPushAdapter');
 
+if (process.env.TZ !== 'UTC') {
+  throw new Error('TZ must be UTC');
+}
+
 const { compute } = require('../src/offsets');
 compute(new Date('2017-08-01T18:57:07.239Z'));
 
