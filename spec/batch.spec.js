@@ -8,9 +8,10 @@ describe('batch', () => {
       const pwi = {};
       const batchSize = 100;
       const numInstallations = 1010;
+      const installationIds = new Array(numInstallations).fill(0).map((_, i) => `${i+1}`);
 
       const stream = sender((msg) => msgs.push(msg), pwi, batchSize);
-      stream.write(new Array(numInstallations).fill('0'));
+      stream.write(installationIds);
       expect(msgs.length).toEqual(11);
 
       let len = 0;
