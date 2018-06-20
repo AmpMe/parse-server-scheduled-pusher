@@ -21,13 +21,13 @@
     "moment-timezone": "^0.5.13",
     "parse": "^1.10.0",
     "parse-server-gcloud-pubsub": "parse-server-modules/parse-server-gcloud-pubsub#feature/disable-fan-out",
-    "winston": "^2.3.1"
+    "winston": "^3.0.0"
   },
   "devDependencies": {
     "eslint": "^4.5.0",
     "eslint-config-google": "^0.9.1",
-    "jasmine": "^2.6.0",
-    "nyc": "^11.0.3",
+    "jasmine": "^3.1.0",
+    "nyc": "^12.0.2",
     "parse-server": "^2.6.4",
     "parse-server-test-runner": "git://github.com/AmpMe/parse-server-test-runner.git#peer-deps"
   }
