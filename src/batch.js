@@ -10,6 +10,7 @@ const queryResults = (where) => new Readable({
 
   async read() {
     const ids = await getObjectIds(where, QUERY_SIZE, this._lastElement);
+    logger.info('Object IDs', { where, ids, resultSize: ids.length, QUERY_SIZE });
     if (ids.length === 0) {
       this.push(null);
       return;
