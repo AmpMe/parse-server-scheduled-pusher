@@ -43,7 +43,7 @@ const sender = (publish, pwi, batchSize) => new Writable({
       numInstallationsSent: this._numInstallationsSent,
     });
 
-    cb();
+    process.nextTick(cb);
   },
 });
 
