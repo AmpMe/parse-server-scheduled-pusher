@@ -1,5 +1,7 @@
 ## Parse Scheduled Pusher
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/AmpMe/parse-server-scheduled-pusher.svg)](https://greenkeeper.io/)
+
 Sends scheduled push notifications and recurring push campaigns.
 
 ### Running:
