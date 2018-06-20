@@ -28,6 +28,8 @@ const sender = (publish, pwi, batchSize) => new Writable({
     let numBatches = 0;
     for (let i = 0; i < ids.length; i += batchSize) {
       const batch = { objectId: { $in: ids.slice(i, i + batchSize) } };
+      logger.info('Created batch', { ids: batch.objectId.$in });
+
       const batchedPwi = Object.assign({}, pwi, { query: { where: batch } });
       const message = JSON.stringify(batchedPwi);
       publish(message);
