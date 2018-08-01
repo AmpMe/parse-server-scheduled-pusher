@@ -50,7 +50,7 @@ function createPushWorkItems(pushStatus, applicationId, now) {
 
     if (typeof UTCOffset !== 'undefined') {
       let requestedTimezones;
-      if (where && where.timeZone && typeof(where.timeZone) != 'object') {
+      if (where && where.timeZone && typeof(where.timeZone) !== 'object') {
         requestedTimezones = new Set([ where.timeZone ]);
       } else if (where && where.timeZone && where.timeZone.$in) {
         requestedTimezones = new Set(where.timeZone.$in);
