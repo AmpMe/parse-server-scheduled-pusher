@@ -77,16 +77,17 @@ function createPushWorkItems(pushStatus, applicationId, now) {
 
   let pushTime = pushStatus.get('pushTime');
   if (pushTimeHasTimezoneComponent(pushTime)) {
-    const ttl = Date.parse(pushTime) + (SEND_TIME_VARIANCE * 1000);
-    if (+now > +ttl) {
-      return [];
+    const latestSendTime = Date.parse(pushTime) + (SEND_TIME_VARIANCE * 1000);
+
+    if (
+      pushStatus.get('status') === 'scheduled' &&
+      now.valueOf() >= Date.parse(pushTime) && // earliest send time
+      now.valueOf() <= latestSendTime
+    ) {
+      return [ offsetToPwi(undefined) ];
     }
 
-    if (pushStatus.get('status') !== 'scheduled') {
-      return [];
-    }
-
-    return [ offsetToPwi(undefined) ];
+    return [];
   }
 
   pushTime = new Date(pushTime);
