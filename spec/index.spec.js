@@ -30,15 +30,15 @@ describe('Sending scheduled pushes', () => {
 
       await bulkInstallations();
       await Parse.Push.send({
-        push_time: stripTimezone(pushTime),
-        data: {
-          alert: 'Alert!!!!!',
-          uri: 'foo://bar?baz=qux',
-          url: 'foo://bar?baz=qux',
-          type: 'bar',
-        },
-        where: {},
-      }, { useMasterKey: true })
+          push_time: stripTimezone(pushTime),
+          data: {
+            alert: 'Alert!!!!!',
+            uri: 'foo://bar?baz=qux',
+            url: 'foo://bar?baz=qux',
+            type: 'bar',
+          },
+          where: {},
+        }, { useMasterKey: true })
         .then(() => sendScheduledPushes(publisher, channel, 'my-application-id', now))
         .then(() => pwiReceivePromise)
         .then((pwi) => {
@@ -48,7 +48,7 @@ describe('Sending scheduled pushes', () => {
   });
 
   describe('at a specific time', () => {
-    it('should work', (done) => {
+    it('should work', async () => {
       const now = new Date('2017-08-24T17:27:43.105Z');
       const subscriber = EventEmitterMQ.createSubscriber();
       const publisher = EventEmitterMQ.createPublisher();
@@ -63,30 +63,43 @@ describe('Sending scheduled pushes', () => {
         });
       });
 
-      Parse.Push.send({
-        push_time: now.toISOString(),
-        data: {
-          alert: 'Alert!!!!!',
-          uri: 'foo://bar?baz=qux',
-          url: 'foo://bar?baz=qux',
-          type: 'bar',
-        },
-        where: {},
-      }, { useMasterKey: true })
-        .then(() => sendScheduledPushes(publisher, channel, 'my-application-id', now))
-        .then(() => pwiReceivePromise)
-        .then((pwi) => {
-          expect(pushWorkItems.length).toBe(1);
-          expect(pwi).toBeDefined();
-        })
+      const sendPush = async (pushTime) => {
+        await Parse.Push.send({
+          push_time: pushTime.toISOString(),
+          data: {
+            alert: 'Alert!!!!!',
+            uri: 'foo://bar?baz=qux',
+            url: 'foo://bar?baz=qux',
+            type: 'bar',
+          },
+          where: {},
+        }, { useMasterKey: true });
+      };
 
-        // It shouldn't re-send
-        .then(() => sendScheduledPushes(publisher, channel, 'my-application-id', now))
-        .then(() => Promise.delay(100))
-        .then(() => {
-          expect(pushWorkItems.length).toBe(1, 'Scheduled push should only be sent once');
-        })
-        .then(done, done.fail);
+      await sendPush(now);
+      await sendScheduledPushes(publisher, channel, 'my-application-id', now);
+      const pwi = await pwiReceivePromise;
+      expect(pushWorkItems.length).toBe(1);
+      expect(pwi).toBeDefined();
+
+      await sendScheduledPushes(publisher, channel, 'my-application-id', now);
+      await Promise.delay(100);
+      expect(pushWorkItems.length).toBe(1, 'Scheduled push should only be sent once');
+
+      await sendPush(new Date(now.valueOf() + 20 * 1000 * 60));
+      await sendScheduledPushes(publisher, channel, 'my-application-id', now);
+      await Promise.delay(100);
+      expect(pushWorkItems.length).toBe(1, 'Push only should be sent in the window');
+
+      await sendPush(new Date(now.valueOf() - 20 * 1000 * 60));
+      await sendScheduledPushes(publisher, channel, 'my-application-id', now);
+      await Promise.delay(100);
+      expect(pushWorkItems.length).toBe(1, 'Push only should be sent in the window');
+
+      await sendPush(now);
+      await sendScheduledPushes(publisher, channel, 'my-application-id', now);
+      await Promise.delay(100);
+      expect(pushWorkItems.length).toBe(2, 'Push only should be sent in the window');
     });
   });
 });
